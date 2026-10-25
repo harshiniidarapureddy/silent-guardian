@@ -1,0 +1,67 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  font-family: 'Inter', 'DM Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background: #F8FAFC;
+  color: #0F172A;
+}
+
+h1, h2, h3, .font-display { font-family: 'Plus Jakarta Sans', 'Outfit', sans-serif; letter-spacing: -0.02em; }
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 173 80% 29%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 215 25% 95%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 215 25% 95%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 173 70% 94%;
+    --accent-foreground: 173 80% 20%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 215 25% 90%;
+    --input: 215 25% 90%;
+    --ring: 173 80% 29%;
+    --radius: 1rem;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground; }
+}
+
+.sg-grid-bg {
+  background-image: radial-gradient(circle at 1px 1px, rgba(15,23,42,0.08) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+.sg-emergency-pulse {
+  box-shadow: 0 0 0 0 rgba(220,38,38,0.6);
+  animation: sgPulse 1.8s infinite;
+}
+@keyframes sgPulse {
+  0% { box-shadow: 0 0 0 0 rgba(220,38,38,0.5); }
+  70% { box-shadow: 0 0 0 14px rgba(220,38,38,0); }
+  100% { box-shadow: 0 0 0 0 rgba(220,38,38,0); }
+}
+
+.sg-fade-in { animation: sgFade 0.35s ease-out both; }
+@keyframes sgFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.sg-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+.sg-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
