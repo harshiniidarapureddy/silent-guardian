@@ -1,0 +1,8 @@
+{
+  "name": "Silent Guardian",
+  "description": "Silent Guardian is a comprehensive healthcare safety net providing AI-powered health triage, hospital bed and emergency resource locator, blood donor network, community first-responder dispatch, and verified healthcare facility management.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
