@@ -39,7 +39,7 @@ export default function Landing() {
           <div className="flex items-center gap-3">
             <Link to="/patient">
               <Button variant="ghost" className="rounded-full text-slate-700 hover:text-teal-800">
-                Patient Portal
+                User Safety Portal
               </Button>
             </Link>
             <Link to="/hospital">
@@ -67,9 +67,9 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28 relative">
           <div className="grid lg:grid-cols-12 gap-12 items-center">
             <div className="lg:col-span-7 sg-fade-in">
-              <div className="inline-flex items-center gap-2 bg-teal-50 border border-teal-200 text-teal-800 px-3.5 py-1.5 rounded-full text-xs font-semibold">
-                <span className="w-2 h-2 rounded-full bg-teal-600 animate-pulse"></span>
-                AI Triage · 500+ Hospitals · 5 Languages · Live Emergency Fleet
+              <div className="inline-flex items-center gap-2 bg-purple-50 border border-purple-200 text-purple-800 px-3.5 py-1.5 rounded-full text-xs font-semibold">
+                <span className="w-2 h-2 rounded-full bg-purple-600 animate-pulse"></span>
+                Multilingual AI Triage · Family Guardian Net · 500+ Hospitals · Live EMS Fleet
               </div>
               <h1 className="font-display mt-5 text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.08]">
                 A quiet guardian for every <span className="text-teal-700">health decision</span>.

@@ -1,7 +1,7 @@
 import {
   User, Profile, Hospital, PatientRecord, SOSAlert, BloodRequest, BloodDonor,
   AwarenessArticle, Medicine, BedCapacity, Ambulance, Doctor, PharmacyItem,
-  FeedbackItem, ScamReport, TriageMessage, AdminAuditLog, SecurityStatus, NotificationItem
+  FeedbackItem, ScamReport, TriageMessage, AdminAuditLog, SecurityStatus, NotificationItem, GuardianAlert
 } from '../types';
 import {
   INITIAL_HOSPITALS, INITIAL_PATIENTS, INITIAL_BEDS, INITIAL_AMBULANCES,
@@ -13,7 +13,8 @@ import {
   generate500Hospitals, generate550Patients, generate500Ambulances,
   generate500Doctors, generate500Pharmacy, generate500BloodDonors,
   generate120BloodRequests, generate510Medicines, generate150AuditLogs,
-  generateSeedNotifications
+  generateSeedNotifications, generateRoleSpecificNotifications,
+  generate50ScamReports, generate60FeedbackItems, generate10GuardianAlerts
 } from './dataGenerator';
 
 import { evaluateSymptomTriage } from './triageAi';
@@ -84,11 +85,15 @@ export function initializeStorage() {
     setStored('medicines', generate510Medicines());
   }
 
-  getStored('beds', INITIAL_BEDS);
-  getStored('alerts', INITIAL_ALERTS);
-  getStored('awareness', INITIAL_AWARENESS);
-  getStored('feedback', INITIAL_FEEDBACK);
-  getStored('scams', INITIAL_SCAMS);
+  const fb = getStored<FeedbackItem[]>('feedback', []);
+  if (!fb || fb.length < 50) {
+    setStored('feedback', generate60FeedbackItems());
+  }
+
+  const sc = getStored<ScamReport[]>('scams', []);
+  if (!sc || sc.length < 40) {
+    setStored('scams', generate50ScamReports());
+  }
 
   const logs = getStored<AdminAuditLog[]>('audit_logs', []);
   if (!logs || logs.length < 100) {
@@ -100,9 +105,25 @@ export function initializeStorage() {
     setStored('notifications', generateSeedNotifications());
   }
 
+  // Ensure role-specific notification queues exist
+  (['patient', 'hospital', 'admin'] as const).forEach(r => {
+    const rKey = `notifications_${r}`;
+    if (!localStorage.getItem(`sg_${rKey}`)) {
+      setStored(rKey, generateRoleSpecificNotifications(r));
+    }
+  });
+
+  getStored('beds', INITIAL_BEDS);
+  getStored('alerts', INITIAL_ALERTS);
+  getStored('awareness', INITIAL_AWARENESS);
   getStored('security_status', INITIAL_SECURITY);
   getStored('triage_messages', [] as TriageMessage[]);
 
+
+  const grd = getStored<GuardianAlert[]>('guardian_alerts', []);
+  if (!grd || grd.length < 10) {
+    setStored('guardian_alerts', generate10GuardianAlerts());
+  }
 
   // Default credentials for manual sign in
   const defaultAccounts = [
@@ -125,10 +146,10 @@ export function initializeStorage() {
     };
     saveAuth("sg-token-patient", defaultUser);
     
-    // Set matching profile with profile photo
+    // Set matching profile with Anime Avatar
     setStored('profile_usr-patient-main', {
       preferred_name: "Ramesh Sharma",
-      photo_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80",
+      photo_url: "https://api.dicebear.com/7.x/adventurer/svg?seed=KenjiDoctor&hair=short01&eyes=variant04",
       age_bracket: "adult",
       language: "en",
       location: "Hyderabad",
@@ -199,7 +220,8 @@ export const api = {
     else if (url === '/profile') {
       const pKey = currentUser ? `profile_${currentUser.id}` : 'profile_default';
       result = getStored<Profile>(pKey, {
-        preferred_name: currentUser?.preferred_name || "Patient",
+        preferred_name: currentUser?.preferred_name || "User",
+        photo_url: "https://api.dicebear.com/7.x/adventurer/svg?seed=KenjiDoctor&hair=short01&eyes=variant04",
         age_bracket: "adult",
         language: "en",
         location: "Hyderabad",
@@ -208,6 +230,11 @@ export const api = {
         blood_group: "O+",
         willing_to_donate: true,
       });
+    }
+
+    // 2b. /guardian-alerts
+    else if (url === '/guardian-alerts') {
+      result = getStored<GuardianAlert[]>('guardian_alerts', generate10GuardianAlerts());
     }
 
     // 3. /hospitals
@@ -401,6 +428,18 @@ export const api = {
       const hospitals = getStored<Hospital[]>('hospitals', INITIAL_HOSPITALS);
       const alerts = getStored<SOSAlert[]>('alerts', INITIAL_ALERTS);
       const triages = getStored<TriageMessage[]>('triage_messages', []);
+      const ambulances = getStored<Ambulance[]>('ambulances', []);
+
+      const cityTelemetry = [
+        { city: "Hyderabad Metro", hospitals: 62, icu_beds: 184, ambulances: 48, avg_latency: "4.2 min", status: "Optimal", dispatch_rate: "98.4%", color: "teal" },
+        { city: "Bengaluru Urban", hospitals: 58, icu_beds: 172, ambulances: 45, avg_latency: "5.1 min", status: "Optimal", dispatch_rate: "97.8%", color: "teal" },
+        { city: "Delhi NCR", hospitals: 74, icu_beds: 218, ambulances: 54, avg_latency: "6.4 min", status: "High Demand", dispatch_rate: "96.2%", color: "amber" },
+        { city: "Mumbai Metropolitan", hospitals: 68, icu_beds: 195, ambulances: 50, avg_latency: "5.8 min", status: "High Demand", dispatch_rate: "96.9%", color: "amber" },
+        { city: "Chennai Core", hospitals: 46, icu_beds: 142, ambulances: 36, avg_latency: "4.6 min", status: "Optimal", dispatch_rate: "98.1%", color: "teal" },
+        { city: "Kolkata Greater", hospitals: 42, icu_beds: 128, ambulances: 32, avg_latency: "4.9 min", status: "Optimal", dispatch_rate: "97.5%", color: "teal" },
+        { city: "Pune Urban", hospitals: 38, icu_beds: 114, ambulances: 28, avg_latency: "4.7 min", status: "Optimal", dispatch_rate: "98.0%", color: "teal" },
+        { city: "Ahmedabad Corridor", hospitals: 34, icu_beds: 98, ambulances: 24, avg_latency: "4.4 min", status: "Optimal", dispatch_rate: "98.3%", color: "teal" }
+      ];
 
       result = {
         patients: 1840,
@@ -411,6 +450,14 @@ export const api = {
         blood_donors: 580,
         total_triages: 412 + triages.length,
         open_alerts: alerts.filter(a => a.status === 'open').length,
+        ambulances_active: ambulances.length > 0 ? ambulances.length : 520,
+        ambulances_on_road: ambulances.filter(a => a.status === 'out').length || 148,
+        total_beds_monitored: 18420,
+        icu_capacity_utilization: "74.2%",
+        avg_network_response_time: "4.8 mins",
+        blood_reserve_index: "94.6% (Balanced)",
+        disaster_recovery_ready: true,
+        city_breakdown: cityTelemetry,
       };
     }
 
@@ -422,12 +469,12 @@ export const api = {
 
     // 14. /feedback
     else if (url === '/feedback') {
-      result = getStored<FeedbackItem[]>('feedback', INITIAL_FEEDBACK);
+      result = getStored<FeedbackItem[]>('feedback', generate60FeedbackItems());
     }
 
     // 15. /admin/scams
     else if (url === '/admin/scams') {
-      result = getStored<ScamReport[]>('scams', INITIAL_SCAMS);
+      result = getStored<ScamReport[]>('scams', generate50ScamReports());
     }
 
     // 16. /admin/audit-logs
@@ -442,7 +489,15 @@ export const api = {
 
     // 18. /notifications
     else if (url === '/notifications') {
-      result = getStored<NotificationItem[]>('notifications', generateSeedNotifications());
+      const u = getUser();
+      const role = u?.role || 'patient';
+      const rKey = `notifications_${role}`;
+      let roleNotifs = getStored<NotificationItem[]>(rKey, []);
+      if (!roleNotifs || roleNotifs.length === 0) {
+        roleNotifs = generateRoleSpecificNotifications(role);
+        setStored(rKey, roleNotifs);
+      }
+      result = roleNotifs;
     }
 
     return { data: result as T };
@@ -487,7 +542,7 @@ export const api = {
       // Initialize matching profile
       setStored(`profile_${user.id}`, {
         preferred_name: name,
-        photo_url: role === 'patient' ? "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&auto=format&fit=crop&q=80" : undefined,
+        photo_url: role === 'patient' ? "https://api.dicebear.com/7.x/adventurer/svg?seed=HikariGuardian&hair=short01&eyes=variant04" : undefined,
         age_bracket: "adult",
         language: "en",
         location: "Hyderabad",
@@ -532,7 +587,7 @@ export const api = {
         if (!existingProf) {
           setStored(profKey, {
             preferred_name: match.name,
-            photo_url: match.role === 'patient' ? "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&auto=format&fit=crop&q=80" : undefined,
+            photo_url: match.role === 'patient' ? "https://api.dicebear.com/7.x/adventurer/svg?seed=KenjiDoctor&hair=short01&eyes=variant04" : undefined,
             age_bracket: "adult",
             language: "en",
             location: "Hyderabad",
@@ -676,7 +731,8 @@ export const api = {
 
     // 8. /triage/chat
     else if (url === '/triage/chat') {
-      const res = evaluateSymptomTriage(payload.message);
+      const lang = payload.lang || 'en';
+      const res = evaluateSymptomTriage(payload.message, lang);
       const triages = getStored<TriageMessage[]>('triage_messages', []);
       triages.push({
         id: `tr-${Date.now()}`,
@@ -688,27 +744,84 @@ export const api = {
       });
       setStored('triage_messages', triages);
 
+      // If emergency or high urgency, automatically log a Guardian Alert!
+      if (res.guardianAlertTriggered) {
+        const currentAlerts = getStored<GuardianAlert[]>('guardian_alerts', generate10GuardianAlerts());
+        const autoAlert: GuardianAlert = {
+          id: `grd-auto-${Date.now()}`,
+          user_name: currentUser?.preferred_name || "User",
+          relation: "Family Ward (You)",
+          age: 38,
+          guardian_name: "Designated Emergency Guardian",
+          guardian_phone: "+91 98490 12841",
+          condition: payload.message.slice(0, 90),
+          severity: res.severity as any,
+          vitals: res.severity === 'critical' ? { bp: "168/104 mmHg", pulse: 114, spo2: "93%" } : { temp: "102.6°F", pulse: 98 },
+          trigger_source: "Live User AI Triage",
+          location: "Current Registered User Location (Hyderabad)",
+          timestamp: "Just now",
+          action_taken: "Guardian Emergency Beacon broadcasted with live vital triage summary.",
+          status: res.severity === 'critical' ? "Dispatched & En Route" : "Stabilized & Monitored"
+        };
+        setStored('guardian_alerts', [autoAlert, ...currentAlerts]);
+      }
+
       result = {
         reply: res.message,
         isEmergency: res.isEmergency,
         severity: res.severity,
         specialist: res.specialist,
+        guardian_alert_triggered: res.guardianAlertTriggered,
+        guardian_alert_message: res.guardianAlertMessage,
+        recommended_medicines: res.recommendedMedicines,
+        emergency_hotlines: res.emergencyHotlines,
+        doctor_recommendation: res.doctorRecommendation,
+        detected_topic: res.detectedTopic,
       };
+    }
+
+    // 8b. /guardian-alerts
+    else if (url === '/guardian-alerts') {
+      const current = getStored<GuardianAlert[]>('guardian_alerts', generate10GuardianAlerts());
+      const newAlert: GuardianAlert = {
+        id: `grd-${Date.now()}`,
+        user_name: payload.user_name || currentUser?.preferred_name || 'Protected User',
+        relation: payload.relation || 'Family Ward',
+        age: payload.age || 45,
+        guardian_name: payload.guardian_name || 'Designated Family Guardian',
+        guardian_phone: payload.guardian_phone || '+91 98490 12841',
+        condition: payload.condition || 'Emergency Vital Condition',
+        severity: payload.severity || 'high',
+        vitals: payload.vitals || { bp: '135/88 mmHg', pulse: 98, temp: '99.1°F' },
+        trigger_source: payload.trigger_source || 'AI Triage Detection',
+        location: payload.location || 'Current GPS Location',
+        timestamp: 'Just now',
+        action_taken: payload.action_taken || 'Guardian notified via Priority Voice Chime & 108 Emergency Ambulance Alert',
+        status: payload.status || 'Dispatched & En Route'
+      };
+      setStored('guardian_alerts', [newAlert, ...current]);
+      result = { ok: true, alert: newAlert };
     }
 
     // 9. /notifications/read
     else if (url === '/notifications/read') {
-      const notifs = getStored<NotificationItem[]>('notifications', generateSeedNotifications());
+      const u = getUser();
+      const role = u?.role || 'patient';
+      const rKey = `notifications_${role}`;
+      const notifs = getStored<NotificationItem[]>(rKey, generateRoleSpecificNotifications(role));
       const updated = notifs.map(n => n.id === payload.id ? { ...n, read: true } : n);
-      setStored('notifications', updated);
+      setStored(rKey, updated);
       result = { ok: true };
     }
 
     // 10. /notifications/read-all
     else if (url === '/notifications/read-all') {
-      const notifs = getStored<NotificationItem[]>('notifications', generateSeedNotifications());
+      const u = getUser();
+      const role = u?.role || 'patient';
+      const rKey = `notifications_${role}`;
+      const notifs = getStored<NotificationItem[]>(rKey, generateRoleSpecificNotifications(role));
       const updated = notifs.map(n => ({ ...n, read: true }));
-      setStored('notifications', updated);
+      setStored(rKey, updated);
       result = { ok: true };
     }
 

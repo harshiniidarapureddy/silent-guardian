@@ -9,10 +9,10 @@ import { api, saveAuth } from "../lib/api";
 
 const ROLE_META = {
   patient: {
-    label: "Patient / Citizen",
+    label: "User / Citizen",
     icon: Shield,
     badge: "Personal",
-    hint: "Emergency SOS, multilingual CPR guides, AI symptom triage & donor network.",
+    hint: "Emergency SOS, multilingual CPR guides, AI symptom triage & Guardian network.",
     color: "teal"
   },
   hospital: {

@@ -9,13 +9,14 @@ import { toast } from "sonner";
 import { CatalogPagination } from "../components/ui/CatalogPagination";
 import DashShell, { NavItem } from "../components/DashShell";
 import { api } from "../lib/api";
-import { generate550Patients } from "../lib/dataGenerator";
-import { PatientRecord, BedCapacity, Ambulance, Doctor, PharmacyItem } from "../types";
+import { generate550Patients, generate500Hospitals } from "../lib/dataGenerator";
+import { PatientRecord, BedCapacity, Ambulance, Doctor, PharmacyItem, Hospital } from "../types";
 
 const NAV: NavItem[] = [
   { key: "overview", to: "/hospital", label: "Command Center", icon: Activity, exact: true },
   { key: "intake", to: "/hospital/intake", label: "Patient Intake (550+)", icon: Users },
   { key: "beds", to: "/hospital/beds", label: "Beds & Capacity", icon: BedDouble },
+  { key: "interior", to: "/hospital/interior", label: "Interior & Rooms (500+)", icon: HospitalIcon },
   { key: "ambulances", to: "/hospital/ambulances", label: "Ambulance Fleet", icon: Truck },
   { key: "doctors", to: "/hospital/doctors", label: "Medical Staff", icon: UserCog },
   { key: "pharmacy", to: "/hospital/pharmacy", label: "Pharmacy Stock", icon: Pill },
@@ -954,6 +955,242 @@ function Pharmacy() {
   );
 }
 
+// 7. HOSPITAL INTERIOR & ADVANCED MEDICAL EQUIPMENT ARCHITECTURE
+function HospitalInteriorEquipment() {
+  const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [selectedHospId, setSelectedHospId] = useState<string>("hosp-1");
+  const [search, setSearch] = useState("");
+  const [activePhotoTab, setActivePhotoTab] = useState<'icu' | 'ward' | 'equipment' | 'er' | 'exterior'>('icu');
+
+  useEffect(() => {
+    const list = generate500Hospitals();
+    setHospitals(list);
+  }, []);
+
+  const selectedHospital = hospitals.find(h => h.id === selectedHospId) || hospitals[0];
+
+  const filteredHospitals = hospitals.filter(h => {
+    const q = search.toLowerCase();
+    return !q || h.name.toLowerCase().includes(q) || h.city.toLowerCase().includes(q);
+  }).slice(0, 50);
+
+  if (!selectedHospital) return null;
+
+  const photos = selectedHospital.photos || {
+    exterior: "https://images.unsplash.com/photo-1587351021759-3e566b6af7cc?w=800&auto=format&fit=crop&q=80",
+    interior_icu: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=800&auto=format&fit=crop&q=80",
+    interior_ward: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=800&auto=format&fit=crop&q=80",
+    equipment_suite: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=800&auto=format&fit=crop&q=80",
+    er_bay: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=800&auto=format&fit=crop&q=80",
+  };
+
+  const details = selectedHospital.interior_details || {
+    room_types: ["Super Deluxe Suite", "Private Single AC", "Semi-Private Twin", "General Multi-Bed Ward", "Level 3 Critical ICU"],
+    equipment_list: [
+      "Siemens SOMATOM 128-Slice Dual-Source CT Scanner",
+      "Philips Ingenia 3.0T Digital Broadband MRI",
+      "Draeger Evita V800 Advanced ICU Ventilators",
+      "Maquet HL 20 Cardiopulmonary Bypass & ECMO System",
+      "GE Healthcare Innova IGS 520 Biplane Cardiac Cath Lab"
+    ],
+    bed_types: [
+      "Hill-Rom Progressa Intensive Care Motorized Bed",
+      "Stryker Secure II Fowler Emergency Electric Bed",
+      "Paramount A5 Series 5-Function ICU Bed"
+    ],
+    accreditations: ["NABH (National Accreditation Board)", "JCI Accredited Facility", "NABL Certified Pathology"]
+  };
+
+  const photoTabs = [
+    { id: 'icu' as const, label: 'Intensive Care Unit (ICU)', img: photos.interior_icu, desc: 'Negative-pressure laminar airflow, ceiling pendant monitors, dedicated resus team' },
+    { id: 'ward' as const, label: 'Inpatient Private Suites', img: photos.interior_ward, desc: 'Motorized Fowler beds, central oxygen manifold, private nurse intercom' },
+    { id: 'equipment' as const, label: 'High-Tech Diagnostics & Cath Lab', img: photos.equipment_suite, desc: '3.0T MRI, 128-slice CT, biplane cardiac catheterization & endoscopy' },
+    { id: 'er' as const, label: 'Trauma & Emergency Bay', img: photos.er_bay, desc: 'Crash carts, Lucas chest compression systems, multi-parameter telemetry' },
+    { id: 'exterior' as const, label: 'Facility Campus & Ambulance Bays', img: photos.exterior, desc: 'Dedicated 4-bay emergency vehicular dock, 24/7 triage intake portal' },
+  ];
+
+  const currentPhotoInfo = photoTabs.find(p => p.id === activePhotoTab) || photoTabs[0];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="font-display text-2xl font-bold text-slate-900">
+              Hospital Interior Architecture & Medical Equipment Showcase
+            </h2>
+            <Badge className="bg-amber-600 text-white font-mono text-xs">
+              520+ Facilities Monitored
+            </Badge>
+          </div>
+          <p className="text-sm text-slate-600 mt-1">
+            Visual inspection of intensive care units, private wards, specialized diagnostic equipment, and motorized bed specifications.
+          </p>
+        </div>
+
+        {/* Hospital Selector Dropdown */}
+        <div className="w-full sm:w-80">
+          <select
+            value={selectedHospId}
+            onChange={(e) => setSelectedHospId(e.target.value)}
+            className="w-full h-10 px-3 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-900 shadow-sm"
+          >
+            {filteredHospitals.map(h => (
+              <option key={h.id} value={h.id}>
+                {h.name} ({h.city})
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Main Selected Hospital Header Card */}
+      <div className="rounded-2xl bg-white border border-slate-200 p-5 shadow-sm space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="font-display font-bold text-lg text-slate-900">{selectedHospital.name}</h3>
+              <Badge variant="outline" className="text-teal-800 bg-teal-50 border-teal-200 text-xs">
+                {selectedHospital.city}
+              </Badge>
+              {selectedHospital.verified && (
+                <span className="text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1 border border-emerald-200">
+                  <Check size={11} /> Verified Facility
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-slate-500 mt-1">{selectedHospital.address} · Emergency Hotline: {selectedHospital.phone}</p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="text-right">
+              <div className="text-[10px] text-slate-400 uppercase font-bold">Total Inpatient Beds</div>
+              <div className="text-xl font-extrabold text-slate-900">{selectedHospital.available_beds} Avail</div>
+            </div>
+            <div className="text-right border-l border-slate-200 pl-3">
+              <div className="text-[10px] text-slate-400 uppercase font-bold">ICU Capacity</div>
+              <div className="text-xl font-extrabold text-amber-700">{selectedHospital.icu_available} Ready</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Interior Photo Studio Gallery with Tabs */}
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {photoTabs.map(t => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setActivePhotoTab(t.id)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                  activePhotoTab === t.id
+                    ? "bg-amber-600 text-white shadow-sm"
+                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="relative rounded-2xl overflow-hidden aspect-video md:aspect-[21/9] max-h-[380px] bg-slate-900 border border-slate-200 shadow-inner group">
+            <img
+              src={currentPhotoInfo.img}
+              alt={currentPhotoInfo.label}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex flex-col justify-end p-5 text-white">
+              <div className="text-xs uppercase tracking-wider font-bold text-amber-400">
+                Verified Clinical Facility View
+              </div>
+              <div className="font-display font-bold text-lg text-white mt-0.5">
+                {currentPhotoInfo.label}
+              </div>
+              <p className="text-xs text-slate-300 max-w-2xl mt-1">
+                {currentPhotoInfo.desc}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 3 Detail Columns: Room Types, Equipment, Bed Specs */}
+        <div className="grid md:grid-cols-3 gap-4 pt-3">
+          {/* Room Types */}
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+            <div className="font-bold text-xs uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              <HospitalIcon size={14} className="text-amber-600" />
+              Room Classes & Allocation
+            </div>
+            <ul className="space-y-1.5 text-xs text-slate-700">
+              {details.room_types.map((r, i) => (
+                <li key={i} className="flex items-center justify-between p-1.5 rounded-lg bg-white border border-slate-200/60">
+                  <span className="font-medium">{r}</span>
+                  <span className="text-[10px] text-emerald-700 font-bold">Ready</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Biomedical Equipment */}
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+            <div className="font-bold text-xs uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              <Activity size={14} className="text-teal-600" />
+              Advanced Medical Equipment
+            </div>
+            <ul className="space-y-1.5 text-xs text-slate-700">
+              {details.equipment_list.map((eq, i) => (
+                <li key={i} className="p-1.5 rounded-lg bg-white border border-slate-200/60 leading-tight">
+                  <span className="font-semibold text-slate-900 block">{eq}</span>
+                  <span className="text-[10px] text-teal-700 font-medium">Certified & Telemetry Connected</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Motorized Bed Types & Accreditations */}
+          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+            <div>
+              <div className="font-bold text-xs uppercase tracking-wider text-slate-700 flex items-center gap-1.5 mb-1.5">
+                <BedDouble size={14} className="text-blue-600" />
+                Motorized ICU & Ward Beds
+              </div>
+              <ul className="space-y-1 text-xs text-slate-700">
+                {Array.isArray(details.bed_types) ? (
+                  details.bed_types.map((b, i) => (
+                    <li key={i} className="p-1.5 rounded-lg bg-white border border-slate-200/60 font-medium">
+                      {b}
+                    </li>
+                  ))
+                ) : (
+                  <>
+                    <li className="p-1.5 rounded-lg bg-white border border-slate-200/60 font-medium">
+                      <span className="font-bold text-slate-900">ICU: </span>{details.bed_types.motorized_icu}
+                    </li>
+                    <li className="p-1.5 rounded-lg bg-white border border-slate-200/60 font-medium">
+                      <span className="font-bold text-slate-900">Ward: </span>{details.bed_types.ward}
+                    </li>
+                  </>
+                )}
+              </ul>
+            </div>
+
+            <div className="pt-2 border-t border-slate-200">
+              <div className="text-[10px] uppercase font-bold text-slate-500 mb-1">Accreditations</div>
+              <div className="flex flex-wrap gap-1">
+                {details.accreditations.map((acc, i) => (
+                  <Badge key={i} variant="outline" className="text-[10px] bg-white text-slate-800 border-slate-300">
+                    {acc}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function HospitalDashboard() {
   return (
     <DashShell title="Hospital Command" nav={NAV} accent="amber">
@@ -961,6 +1198,7 @@ export default function HospitalDashboard() {
         <Route path="/" element={<Overview />} />
         <Route path="/intake" element={<PatientIntake />} />
         <Route path="/beds" element={<BedsAndCapacity />} />
+        <Route path="/interior" element={<HospitalInteriorEquipment />} />
         <Route path="/ambulances" element={<Ambulances />} />
         <Route path="/doctors" element={<Doctors />} />
         <Route path="/pharmacy" element={<Pharmacy />} />

@@ -4,7 +4,7 @@ import {
   Bell, CheckCheck, Volume2, VolumeX, ShieldAlert, 
   Siren, Droplet, Shield, Sparkles, AlertCircle, X, ChevronRight, PlusCircle 
 } from "lucide-react";
-import { api } from "../lib/api";
+import { api, getUser } from "../lib/api";
 import { NotificationItem } from "../types";
 
 export default function NotificationCenter() {
@@ -16,6 +16,8 @@ export default function NotificationCenter() {
     return localStorage.getItem("sg_notif_sound") !== "false";
   });
   const popoverRef = useRef<HTMLDivElement>(null);
+  const currentUser = getUser();
+  const userRole = currentUser?.role || 'patient';
 
   // Play pleasant acoustic synthesis chime using Web Audio API
   const playAudioChime = (type: 'urgent' | 'normal' = 'normal') => {
@@ -210,7 +212,11 @@ export default function NotificationCenter() {
                     </span>
                   )}
                 </h3>
-                <p className="text-[11px] text-slate-300">Live clinical & fleet telemetry</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded bg-teal-800/80 text-teal-200">
+                    {userRole === 'hospital' ? '🏥 Hospital Command Feed' : userRole === 'admin' ? '🛡️ Security Admin Feed' : '🩺 Patient Care Feed'}
+                  </span>
+                </div>
               </div>
             </div>
 

@@ -32,10 +32,14 @@ export default function DashShell({ title, nav, children, accent = "teal" }: Das
       const prof = localStorage.getItem(`sg_profile_${u.id}`);
       if (prof) {
         const parsed = JSON.parse(prof);
-        return parsed.photo_url || null;
+        const url = parsed.photo_url;
+        if (url && url.includes("unsplash.com")) {
+          return "https://api.dicebear.com/7.x/adventurer/svg?seed=KenjiDoctor&hair=short01&eyes=variant04";
+        }
+        return url || "https://api.dicebear.com/7.x/adventurer/svg?seed=KenjiDoctor&hair=short01&eyes=variant04";
       }
     } catch {}
-    return null;
+    return "https://api.dicebear.com/7.x/adventurer/svg?seed=KenjiDoctor&hair=short01&eyes=variant04";
   });
 
   useEffect(() => {
@@ -45,7 +49,12 @@ export default function DashShell({ title, nav, children, accent = "teal" }: Das
           const prof = localStorage.getItem(`sg_profile_${u.id}`);
           if (prof) {
             const parsed = JSON.parse(prof);
-            setPhotoUrl(parsed.photo_url || null);
+            const url = parsed.photo_url;
+            if (url && url.includes("unsplash.com")) {
+              setPhotoUrl("https://api.dicebear.com/7.x/adventurer/svg?seed=KenjiDoctor&hair=short01&eyes=variant04");
+            } else {
+              setPhotoUrl(url || "https://api.dicebear.com/7.x/adventurer/svg?seed=KenjiDoctor&hair=short01&eyes=variant04");
+            }
           }
         } catch {}
       }
@@ -131,7 +140,7 @@ export default function DashShell({ title, nav, children, accent = "teal" }: Das
               )}
               <div className="min-w-0 flex-1">
                 <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 capitalize">
-                  {u?.role || "User"}
+                  {u?.role === "patient" ? "User" : (u?.role || "User")}
                 </div>
                 <div className="text-sm font-bold text-slate-900 truncate">
                   {u?.preferred_name || u?.email || "User"}

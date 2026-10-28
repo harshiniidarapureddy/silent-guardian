@@ -1,4 +1,4 @@
-import { Hospital, PatientRecord, Medicine, AwarenessArticle, Doctor, Ambulance, PharmacyItem, BloodDonor, BloodRequest, AdminAuditLog, NotificationItem } from '../types';
+import { Hospital, PatientRecord, Medicine, AwarenessArticle, Doctor, Ambulance, PharmacyItem, BloodDonor, BloodRequest, AdminAuditLog, NotificationItem, ScamReport, FeedbackItem, GuardianAlert } from '../types';
 
 export interface VideoAwarenessGuide {
   id: string;
@@ -471,6 +471,77 @@ export function generate510Medicines(): Medicine[] {
     const rating = Number((4.3 + ((i % 7) * 0.1)).toFixed(1));
     const efficacy_percent = 88 + (i % 11);
 
+    const indicationTags: string[] = [];
+    if (cls.cat.includes("Analgesic")) {
+      indicationTags.push("fever", "headache", "body pain", "pyrexia", "flu", "temperature", "chills", "viral");
+    } else if (cls.cat.includes("Respiratory")) {
+      indicationTags.push("allergy", "rash", "skin allergy", "hives", "itching", "sneezing", "cough", "cold", "asthma", "wheezing");
+    } else if (cls.cat.includes("Gastrointestinal")) {
+      indicationTags.push("acidity", "stomach pain", "gas", "gerd", "heartburn", "indigestion", "nausea", "vomiting", "cramp");
+    } else if (cls.cat.includes("Antibiotic")) {
+      indicationTags.push("infection", "bacterial", "sore throat", "wound", "dental", "fever", "urinary");
+    } else if (cls.cat.includes("Cardiovascular")) {
+      indicationTags.push("blood pressure", "hypertension", "heart", "cholesterol", "cardiac");
+    } else if (cls.cat.includes("Antidiabetic")) {
+      indicationTags.push("diabetes", "blood sugar", "glucose", "glycemic");
+    } else if (cls.cat.includes("Neurological")) {
+      indicationTags.push("nerve pain", "migraine", "neuropathy", "headache", "spasm", "tingling");
+    }
+
+    const basePriceNum = 35 + ((i * 11) % 220);
+    const onlineApps = [
+      {
+        name: "Apollo 24|7 Pharmacy",
+        app_id: "apollo" as const,
+        in_stock: true,
+        price: `₹${basePriceNum}`,
+        discount_percent: 18 + (i % 12),
+        delivery_eta: "⚡ 15-30 min hyper-local",
+        buy_url: `https://www.apollopharmacy.in/search-medicines/${encodeURIComponent(root)}`,
+        logo_color: "emerald"
+      },
+      {
+        name: "Tata 1mg",
+        app_id: "1mg" as const,
+        in_stock: true,
+        price: `₹${Math.max(25, basePriceNum - 8)}`,
+        discount_percent: 22,
+        delivery_eta: "Today, within 2 hrs",
+        buy_url: `https://www.1mg.com/search/all?name=${encodeURIComponent(root)}`,
+        logo_color: "red"
+      },
+      {
+        name: "PharmEasy",
+        app_id: "pharmeasy" as const,
+        in_stock: i % 8 !== 0,
+        price: `₹${Math.max(20, basePriceNum - 12)}`,
+        discount_percent: 25,
+        delivery_eta: "Express (45 mins)",
+        buy_url: `https://pharmeasy.in/search/all?name=${encodeURIComponent(root)}`,
+        logo_color: "teal"
+      },
+      {
+        name: "Netmeds",
+        app_id: "netmeds" as const,
+        in_stock: true,
+        price: `₹${basePriceNum - 4}`,
+        discount_percent: 20,
+        delivery_eta: "Same-Day Delivery",
+        buy_url: `https://www.netmeds.com/catalogsearch/result?q=${encodeURIComponent(root)}`,
+        logo_color: "cyan"
+      },
+      {
+        name: "MedPlus Mart",
+        app_id: "medplus" as const,
+        in_stock: true,
+        price: `₹${basePriceNum - 6}`,
+        discount_percent: 20,
+        delivery_eta: "⚡ 20 min store pickup",
+        buy_url: `https://www.medplusmart.com/search/${encodeURIComponent(root)}`,
+        logo_color: "blue"
+      }
+    ];
+
     medicines.push({
       id: `med-${i}`,
       name,
@@ -484,6 +555,8 @@ export function generate510Medicines(): Medicine[] {
       efficacy_percent,
       good_for: cls.goodFor,
       warnings: cls.warning,
+      indication_tags: indicationTags,
+      online_apps: onlineApps,
     });
   }
 
@@ -910,8 +983,635 @@ export function generateSeedNotifications(): NotificationItem[] {
       timestamp: new Date(now - 540 * 60 * 1000).toISOString(),
       read: true,
       action_url: "/blood-finder",
-      action_label: "Contact Donor"
+      action_label: "Contact Donor",
+      target_role: "patient"
     }
   ];
 }
+
+// Role-tailored notifications generator delivering distinctive operational alerts per persona
+export function generateRoleSpecificNotifications(role: 'patient' | 'hospital' | 'admin' = 'patient'): NotificationItem[] {
+  const now = Date.now();
+
+  const patientNotifs: NotificationItem[] = [
+    {
+      id: "pt-notif-01",
+      title: "🚨 Urgent Blood Donor Match Needed (O+)",
+      message: "Care Hospital Banjara Hills has an emergency post-accident surgery requiring O+ blood within 2 hours. Your profile is an eligible match.",
+      category: "blood",
+      priority: "urgent",
+      timestamp: new Date(now - 8 * 60 * 1000).toISOString(),
+      read: false,
+      action_url: "/patient/blood",
+      action_label: "View Request",
+      target_role: "patient"
+    },
+    {
+      id: "pt-notif-02",
+      title: "💊 Prescription Refill Reminder",
+      message: "Your Cetirizine 10mg and Paracetamol stock is due for refill. Click to order with 15-30 min hyper-local delivery on Apollo 24/7 or Tata 1mg.",
+      category: "clinical",
+      priority: "normal",
+      timestamp: new Date(now - 35 * 60 * 1000).toISOString(),
+      read: false,
+      action_url: "/patient/medicine",
+      action_label: "Order Online",
+      target_role: "patient"
+    },
+    {
+      id: "pt-notif-03",
+      title: "🩺 Upcoming OPD Teleconsultation",
+      message: "Confirmed appointment with Dr. Priya Sharma (Neurologist, Apollo Hospitals) today at 4:30 PM. Voice room will open 10 mins prior.",
+      category: "clinical",
+      priority: "high",
+      timestamp: new Date(now - 65 * 60 * 1000).toISOString(),
+      read: false,
+      action_url: "/patient/doctors",
+      action_label: "View Doctor",
+      target_role: "patient"
+    },
+    {
+      id: "pt-notif-04",
+      title: "📹 New Action First-Aid Simulator Published",
+      message: "Dr. Maya published a step-by-step CPR & Choking Heimlich interactive video with animated actions in 6 languages.",
+      category: "system",
+      priority: "normal",
+      timestamp: new Date(now - 140 * 60 * 1000).toISOString(),
+      read: true,
+      action_url: "/patient/awareness",
+      action_label: "Watch Simulation",
+      target_role: "patient"
+    },
+    {
+      id: "pt-notif-05",
+      title: "☀️ Seasonal Heat Index Health Bulletin",
+      message: "State Health Dept issued a high temperature alert (41°C). Drink electrolyte fluids and review heat stroke prevention steps.",
+      category: "emergency",
+      priority: "high",
+      timestamp: new Date(now - 280 * 60 * 1000).toISOString(),
+      read: true,
+      action_url: "/patient/awareness",
+      action_label: "Read Advisory",
+      target_role: "patient"
+    }
+  ];
+
+  const hospitalNotifs: NotificationItem[] = [
+    {
+      id: "hosp-notif-01",
+      title: "🚨 Inbound ALS Ambulance (Critical Cardiac)",
+      message: "Unit #AMB-108 en route to Trauma Bay with 58-year-old male with acute STEMI. Lucas CPR active, telemetry streaming. ETA 4 mins.",
+      category: "emergency",
+      priority: "urgent",
+      timestamp: new Date(now - 4 * 60 * 1000).toISOString(),
+      read: false,
+      action_url: "/hospital/intake",
+      action_label: "Prep Trauma Bay",
+      target_role: "hospital"
+    },
+    {
+      id: "hosp-notif-02",
+      title: "⚠️ Neonatal ICU Bed Capacity Warning",
+      message: "NICU bed occupancy reached 92% (11 of 12 occupied). Consider redirecting elective transfers to KIMS or Rainbow Children's.",
+      category: "system",
+      priority: "high",
+      timestamp: new Date(now - 22 * 60 * 1000).toISOString(),
+      read: false,
+      action_url: "/hospital/beds",
+      action_label: "View Bed Matrix",
+      target_role: "hospital"
+    },
+    {
+      id: "hosp-notif-03",
+      title: "🩸 Urgent Blood Bank Deficit: O-Negative",
+      message: "Emergency blood bank inventory for O-Negative packed red blood cells has dropped below critical minimum (2 units remaining).",
+      category: "blood",
+      priority: "urgent",
+      timestamp: new Date(now - 55 * 60 * 1000).toISOString(),
+      read: false,
+      action_url: "/hospital/overview",
+      action_label: "Request Supply",
+      target_role: "hospital"
+    },
+    {
+      id: "hosp-notif-04",
+      title: "👨‍⚕️ Emergency Department Shift Handover",
+      message: "Night Chief Medical Officer Dr. Vikram K. has signed in. 14 patients currently undergoing active triage in ER observation.",
+      category: "clinical",
+      priority: "normal",
+      timestamp: new Date(now - 110 * 60 * 1000).toISOString(),
+      read: true,
+      action_url: "/hospital/doctors",
+      action_label: "Duty Roster",
+      target_role: "hospital"
+    },
+    {
+      id: "hosp-notif-05",
+      title: "⚙️ Ventilator Maintenance Scheduled",
+      message: "Routine pneumatic calibration for Draeger Evita V800 (ICU Bed 04) scheduled for 06:00 AM by biomedical engineering.",
+      category: "system",
+      priority: "normal",
+      timestamp: new Date(now - 240 * 60 * 1000).toISOString(),
+      read: true,
+      action_url: "/hospital/beds",
+      action_label: "Equipment Log",
+      target_role: "hospital"
+    }
+  ];
+
+  const adminNotifs: NotificationItem[] = [
+    {
+      id: "adm-notif-01",
+      title: "🛡️ New Hospital Credential Application (2FA Req)",
+      message: "Metro Trauma & Heart Institute (Sector 12) submitted accreditation licenses and NABH clearance for verification.",
+      category: "security",
+      priority: "urgent",
+      timestamp: new Date(now - 6 * 60 * 1000).toISOString(),
+      read: false,
+      action_url: "/admin/verify",
+      action_label: "Verify Queue",
+      target_role: "admin"
+    },
+    {
+      id: "adm-notif-02",
+      title: "⚠️ Spike in Medical Fraud Reports Detected",
+      message: "7 coordinated reports flagged regarding unauthorized WhatsApp accounts soliciting advance fees for fake blood deliveries.",
+      category: "emergency",
+      priority: "urgent",
+      timestamp: new Date(now - 19 * 60 * 1000).toISOString(),
+      read: false,
+      action_url: "/admin/scams",
+      action_label: "Investigate Scams",
+      target_role: "admin"
+    },
+    {
+      id: "adm-notif-03",
+      title: "🔐 Zero-Trust Admin 2FA Token Validated",
+      message: "Session authenticated from secure subnet (10.240.18.92). Cryptographic hardware token verified with zero skew.",
+      category: "security",
+      priority: "normal",
+      timestamp: new Date(now - 45 * 60 * 1000).toISOString(),
+      read: false,
+      action_url: "/admin/audit",
+      action_label: "Audit Trail",
+      target_role: "admin"
+    },
+    {
+      id: "adm-notif-04",
+      title: "📊 Regional Network Telemetry: Delhi NCR Load +34%",
+      message: "Emergency dispatch routing algorithm auto-balanced 18 ambulances across North & Central Delhi corridors.",
+      category: "system",
+      priority: "high",
+      timestamp: new Date(now - 80 * 60 * 1000).toISOString(),
+      read: true,
+      action_url: "/admin",
+      action_label: "Network Metrics",
+      target_role: "admin"
+    },
+    {
+      id: "adm-notif-05",
+      title: "📜 Annual HIPAA / DPDP Compliance Attestation",
+      message: "Automated penetration testing passed with 0 critical findings. Ready for CSO cryptographic sign-off.",
+      category: "security",
+      priority: "normal",
+      timestamp: new Date(now - 300 * 60 * 1000).toISOString(),
+      read: true,
+      action_url: "/admin/security",
+      action_label: "Security Console",
+      target_role: "admin"
+    }
+  ];
+
+  if (role === 'hospital') return hospitalNotifs;
+  if (role === 'admin') return adminNotifs;
+  return patientNotifs;
+}
+
+// Procedural generator for 50+ Realistic Medical Scams & Fraud Reports with full investigation notes
+export function generate50ScamReports(): ScamReport[] {
+  const categories = [
+    "Fraudulent Blood Service",
+    "Fake ICU Bed Reservation",
+    "Counterfeit Medication Racket",
+    "Impersonation & Phony Hotline",
+    "Bogus Crowdfunding & QR Scam",
+    "Organ Transplant Queue Scheme",
+    "Black-Market Medical Oxygen",
+    "Unlicensed Teleconsultation Fraud"
+  ];
+
+  const scamTemplates = [
+    {
+      title: "Unauthorized WhatsApp Advance Fee for Bombay O-Blood",
+      cat: "Fraudulent Blood Service",
+      sev: "critical" as const,
+      details: "WhatsApp group soliciting ₹7,500 advance payment via fraudulent UPI for 'rare Bombay O blood group supply' with fake Apollo stamp.",
+      notes: "Cybercrime cell notified; UPI VPA frozen; phone number +91 98490-XXXXX blacklisted across state telecom gateways.",
+      action: "UPI Account Frozen & Police Complaint Filed",
+      status: "verified_scam" as const
+    },
+    {
+      title: "Phony ICU Bed Allocation Brokerage at Government Hospitals",
+      cat: "Fake ICU Bed Reservation",
+      sev: "critical" as const,
+      details: "Touts demanding ₹25,000 cash promising guaranteed ventilator bed reservations inside public district emergency wards.",
+      notes: "On-site hospital vigilance team apprehended 2 middle-men near Gate 3; zero administrative staff compromised.",
+      action: "Criminal FIR Lodged under IPC 420",
+      status: "verified_scam" as const
+    },
+    {
+      title: "Counterfeit Liposomal Amphotericin-B & Remdesivir Vials",
+      cat: "Counterfeit Medication Racket",
+      sev: "critical" as const,
+      details: "Batches of counterfeit antifungal vials containing saline and starch distributed via Telegram emergency channels.",
+      notes: "Drug Controller raid confiscated 140 fake cartons from an unlicensed warehouse in Old Suburb.",
+      action: "Warehouse Sealed by State Drug Inspector",
+      status: "resolved" as const
+    },
+    {
+      title: "Imposter 108 Emergency Ambulance Dispatch Dispatcher",
+      cat: "Impersonation & Phony Hotline",
+      sev: "high" as const,
+      details: "Google Maps listing showing altered dispatch number charging ₹12,000 flat advance for government free emergency transport.",
+      notes: "Google Maps malicious business pin removed via official legal escalation; domain redirected.",
+      action: "Fake Google Business Listing Removed",
+      status: "resolved" as const
+    },
+    {
+      title: "Phishing SMS for Ayushman Bharat Card Renewal",
+      cat: "Bogus Crowdfunding & QR Scam",
+      sev: "high" as const,
+      details: "Mass SMS campaign prompting low-income families to enter Aadhaar details and pay ₹499 to 'renew free emergency health cards'.",
+      notes: "CERT-In alert issued; malicious hosting server terminated within 4 hours.",
+      action: "Phishing Domain Takedown Completed",
+      status: "resolved" as const
+    },
+    {
+      title: "Organ Transplant Priority List Advancement Extortion",
+      cat: "Organ Transplant Queue Scheme",
+      sev: "critical" as const,
+      details: "Email solicitation promising to bump patients to the top of NOTTO renal organ waitlist for ₹3,00,000 cryptocurrency deposit.",
+      notes: "NOTTO central registry verified safe and unbreached; fraudulent cryptographic wallet flagged to Financial Intelligence Unit.",
+      action: "FIU Watchlist Escalation",
+      status: "verified_scam" as const
+    },
+    {
+      title: "Unlicensed Ayurvedic Cancer Miracle Cure Clinic",
+      cat: "Unlicensed Teleconsultation Fraud",
+      sev: "high" as const,
+      details: "Unregistered clinic advertising 100% cure for stage-4 malignancies using untested herbal concoctions, advising patients to stop chemotherapy.",
+      notes: "State Medical Council issued cease-and-desist order; clinical premises sealed for unlicensed medical practice.",
+      action: "Medical Council Cease-and-Desist Enforced",
+      status: "verified_scam" as const
+    },
+    {
+      title: "Fake Cryogenic Oxygen Cylinder Refill Token",
+      cat: "Black-Market Medical Oxygen",
+      sev: "high" as const,
+      details: "Scammer generating fake QR tokens for oxygen refill queues outside civic hospitals charging ₹2,000 per token.",
+      notes: "Reported by hospital security; suspect identified on CCTV and handed over to local station.",
+      action: "Suspect Detained by Law Enforcement",
+      status: "resolved" as const
+    },
+    {
+      title: "Impersonated Senior Cardiologist OPD Video Consult",
+      cat: "Unlicensed Teleconsultation Fraud",
+      sev: "medium" as const,
+      details: "Deepfake audio clone of Dr. K. Srinivas attempting to conduct remote consultations and prescribe scheduled drugs.",
+      notes: "Medical council registry warned; deepfake video accounts taken down from social media.",
+      action: "Social Media Platform Takedown Notice",
+      status: "flagged" as const
+    },
+    {
+      title: "Counterfeit Emergency Cardiac Stent Serial Labels",
+      cat: "Counterfeit Medication Racket",
+      sev: "critical" as const,
+      details: "Unverified supplier offering expired drug-eluting stents with relabeled manufacturer expiry dates.",
+      notes: "Internal quality control audit trapped shipment at receiving dock. CDSCO notified for manufacturer inspection.",
+      action: "Consignment Quarantined & CDSCO Alerted",
+      status: "verified_scam" as const
+    }
+  ];
+
+  const scams: ScamReport[] = [];
+
+  for (let i = 1; i <= 52; i++) {
+    const t = scamTemplates[(i - 1) % scamTemplates.length];
+    const city = CITIES[(i - 1) % CITIES.length];
+    const daysAgo = (i % 25) + 1;
+    const isResolved = i % 3 === 0;
+    const isFlagged = i % 4 === 0 && !isResolved;
+    const status: 'flagged' | 'verified_scam' | 'resolved' = isResolved ? 'resolved' : (isFlagged ? 'flagged' : 'verified_scam');
+
+    scams.push({
+      id: `scam-${i}`,
+      title: `${t.title} [${city} Region]`,
+      category: t.cat,
+      severity: t.sev,
+      location: city,
+      reported_details: `${t.details} First detected in ${city} metropolitan healthcare perimeter affecting emergency seekers.`,
+      investigation_notes: `${t.notes} Lead Investigator: Silent Guardian Cyber Fraud Unit #${100 + (i % 8)}.`,
+      action_taken: t.action,
+      status,
+      created_at: `${daysAgo} day${daysAgo > 1 ? 's' : ''} ago`
+    });
+  }
+
+  return scams;
+}
+
+// Procedural generator for 60+ Realistic User & Clinician Feedback Records
+export function generate60FeedbackItems(): FeedbackItem[] {
+  const templates = [
+    {
+      source: "patient" as const,
+      author: "Sita Sharma",
+      role: "Verified Patient",
+      rating: 5,
+      cat: "AI Triage Accuracy" as const,
+      sent: "positive" as const,
+      msg: "The AI Triage picked up my mother's acute cardiac symptoms within 30 seconds and urged us to rush to Apollo Emergency. The doctors confirmed that the fast response prevented major heart damage.",
+      resp: "Thank you for trusting Silent Guardian. We are deeply relieved your mother received timely emergency care."
+    },
+    {
+      source: "hospital" as const,
+      author: "Dr. Vikram K.",
+      role: "Chief of Emergency Care, Care Hospital",
+      rating: 5,
+      cat: "Emergency Dispatch" as const,
+      sent: "positive" as const,
+      msg: "The live trauma queue and Lucas CPR telemetry streaming on inbound ambulances gives our resuscitation teams 5 crucial minutes of advance preparation. Zero downtime observed.",
+      resp: "We are honored to support your critical trauma ward."
+    },
+    {
+      source: "patient" as const,
+      author: "Rajeshwar Rao",
+      role: "Elderly Care Guardian",
+      rating: 5,
+      cat: "Language Accessibility" as const,
+      sent: "positive" as const,
+      msg: "My 72-year-old father was able to listen to the Telugu CPR and heat stroke awareness video without any difficulty. The voice narration is exceptionally clear and natural.",
+      resp: "Providing culturally and linguistically inclusive safety information is at the core of our mission."
+    },
+    {
+      source: "responder" as const,
+      author: "Arjun Mehta",
+      role: "Certified Community First Responder",
+      rating: 5,
+      cat: "Emergency Dispatch" as const,
+      sent: "positive" as const,
+      msg: "Received an instant SOS notification for a choking child at Hitech City metro station. The Heimlich visual simulator guided bystanders until our team reached within 4 minutes.",
+      resp: "Incredible bravery, Arjun! Your rapid response exemplifies community safety net."
+    },
+    {
+      source: "hospital" as const,
+      author: "Sunita Verma",
+      role: "Blood Bank Director, KIMS",
+      rating: 4,
+      cat: "Bed Availability" as const,
+      sent: "positive" as const,
+      msg: "The automated donor matching network helped us fulfill 18 critical O-negative and AB-negative blood requests this month without frantic phone calls.",
+      resp: "Thank you for the update. We have expanded donor geolocation radius to further enhance supply."
+    },
+    {
+      source: "doctor" as const,
+      author: "Dr. Ananya Sen",
+      role: "Pediatric Intensivist",
+      rating: 5,
+      cat: "AI Triage Accuracy" as const,
+      sent: "positive" as const,
+      msg: "The skin rash lesion analyzer correctly identified pediatric urticaria and advised the mother against applying home irritants. Very safe, evidence-based guardrails.",
+      resp: "Our clinical dermatology AI is trained on rigorous clinical pediatric protocols."
+    },
+    {
+      source: "patient" as const,
+      author: "Kavitha Reddy",
+      role: "Verified Patient",
+      rating: 4,
+      cat: "General Care" as const,
+      sent: "constructive" as const,
+      msg: "The direct online pharmacy links for fever medicines on Apollo and Tata 1mg were super convenient during my high fever when I could not step out of bed.",
+      resp: "Glad you felt supported. We continue to add more fast-delivery pharmacy partners."
+    },
+    {
+      source: "hospital" as const,
+      author: "Staff Nurse Preeti",
+      role: "ICU Charge Nurse",
+      rating: 5,
+      cat: "Bed Availability" as const,
+      sent: "positive" as const,
+      msg: "Managing bed turnover is now seamless. Updating ICU and ventilator capacity reflects instantly for transferring ambulances across the city.",
+      resp: "Thank you Preeti for keeping telemetry accurate 24/7."
+    },
+    {
+      source: "patient" as const,
+      author: "Mohammed Farooq",
+      role: "Blood Donor Volunteer",
+      rating: 5,
+      cat: "Language Accessibility" as const,
+      sent: "positive" as const,
+      msg: "Hands-free voice triage worked like magic even in Hindi! Spoke my symptoms while driving and it drafted everything cleanly.",
+      resp: "Safety first! Please always pull over when using voice triage in vehicles."
+    },
+    {
+      source: "responder" as const,
+      author: "Deepak Choudhary",
+      role: "Paramedic Dispatcher",
+      rating: 4,
+      cat: "Emergency Dispatch" as const,
+      sent: "constructive" as const,
+      msg: "Would love to see even more traffic corridor integrations for ambulance green lanes during peak rush hours.",
+      resp: "Our engineering team is actively working with traffic police sensors for automated corridor clearing."
+    }
+  ];
+
+  const feedback: FeedbackItem[] = [];
+
+  for (let i = 1; i <= 60; i++) {
+    const t = templates[(i - 1) % templates.length];
+    const daysAgo = ((i * 3) % 28) + 1;
+
+    feedback.push({
+      id: `fb-${i}`,
+      source: t.source,
+      author_name: `${t.author} (${CITIES[(i - 1) % CITIES.length]})`,
+      role_tag: t.role,
+      rating: t.rating,
+      category: t.cat,
+      sentiment: t.sent,
+      message: t.msg,
+      response: t.resp,
+      created_at: `${daysAgo} day${daysAgo > 1 ? 's' : ''} ago`
+    });
+  }
+
+  return feedback;
+}
+
+export function generate10GuardianAlerts(): GuardianAlert[] {
+  return [
+    {
+      id: "grd-1",
+      user_name: "Sunita Verma",
+      relation: "Mother",
+      age: 58,
+      guardian_name: "Ananya Verma (Daughter)",
+      guardian_phone: "+91 98490 12841",
+      condition: "Acute chest heaviness with left arm numbness & cold sweats",
+      severity: "critical",
+      vitals: { bp: "168/104 mmHg", pulse: 114, temp: "98.6°F", spo2: "94%" },
+      trigger_source: "AI Triage Emergency Detection",
+      location: "Banjara Hills, Road No 12, Hyderabad",
+      timestamp: "3 mins ago",
+      action_taken: "Daughter Ananya acknowledged via Priority Voice Chime. 108 Emergency Ambulance dispatched with Cath Lab pre-alert to Apollo Jubilee Hills.",
+      status: "Dispatched & En Route"
+    },
+    {
+      id: "grd-2",
+      user_name: "Rajesh Patel",
+      relation: "Father",
+      age: 66,
+      guardian_name: "Kunal Patel (Son)",
+      guardian_phone: "+91 98112 34910",
+      condition: "Sudden slurred speech, right arm weakness, facial droop (FAST Stroke Code)",
+      severity: "critical",
+      vitals: { bp: "178/110 mmHg", pulse: 92, temp: "98.8°F", spo2: "96%" },
+      trigger_source: "Speech Analysis & Triage Diagnostic",
+      location: "Koramangala 4th Block, Bengaluru",
+      timestamp: "14 mins ago",
+      action_taken: "Son Kunal confirmed beacon. Max Super Speciality Neuro ER activated thrombolysis protocol. Patient in ambulance.",
+      status: "Under Care in Neuro ER"
+    },
+    {
+      id: "grd-3",
+      user_name: "Aarav Sharma",
+      relation: "Child (Son)",
+      age: 4,
+      guardian_name: "Priya Sharma (Mother)",
+      guardian_phone: "+91 97011 48291",
+      condition: "High spiking fever (103.4°F) with lethargy and febrile convulsion risk",
+      severity: "high",
+      vitals: { temp: "103.4°F", pulse: 138, spo2: "98%" },
+      trigger_source: "AI Triage Pediatric Urgent Protocol",
+      location: "Indirapuram, Sector 4, Delhi NCR",
+      timestamp: "28 mins ago",
+      action_taken: "Mother Priya initiated lukewarm sponge compress. Video tele-consult with Pediatrician Dr. Anjali initiated; Crocin drops administered.",
+      status: "Stabilized & Monitored"
+    },
+    {
+      id: "grd-4",
+      user_name: "Lakshmi Devi",
+      relation: "Mother",
+      age: 74,
+      guardian_name: "Karthik Sundaram (Son)",
+      guardian_phone: "+91 94401 92831",
+      condition: "Acute respiratory distress: SpO2 dropped to 88% on room air",
+      severity: "critical",
+      vitals: { spo2: "88%", pulse: 122, bp: "142/88 mmHg" },
+      trigger_source: "Pulse Oximeter Continuous IoT Telemetry",
+      location: "Anna Nagar West, Chennai",
+      timestamp: "45 mins ago",
+      action_taken: "Son Karthik activated 2L/min home oxygen concentrator. Oxygenated paramedic ambulance arriving in 4 minutes.",
+      status: "Oxygen Administered · In Transit"
+    },
+    {
+      id: "grd-5",
+      user_name: "Dr. Subhash Chandra",
+      relation: "Father",
+      age: 71,
+      guardian_name: "Dr. Neha Chandra (Daughter)",
+      guardian_phone: "+91 98220 54192",
+      condition: "Fall in bathroom, unable to bear weight, suspected left femoral neck fracture",
+      severity: "high",
+      vitals: { bp: "150/94 mmHg", pulse: 88, temp: "98.4°F" },
+      trigger_source: "Smart Home Impact / Fall Beacon",
+      location: "Aundh, Near Medipoint, Pune",
+      timestamp: "1 hour ago",
+      action_taken: "Daughter Dr. Neha mobilized orthopedic trauma stretcher team. X-ray scheduled at Sancheti Orthopedic Hospital.",
+      status: "Arrived at Ortho Bay"
+    },
+    {
+      id: "grd-6",
+      user_name: "Rohan Sengupta",
+      relation: "Husband / Spouse",
+      age: 38,
+      guardian_name: "Meera Sengupta (Wife)",
+      guardian_phone: "+91 99302 48102",
+      condition: "Acute anaphylactic reaction: lip swelling, diffuse hives & inspiratory stridor",
+      severity: "critical",
+      vitals: { bp: "102/65 mmHg", pulse: 128, spo2: "92%" },
+      trigger_source: "AI Photo Lesion & Airway Triage",
+      location: "Lokhandwala Complex, Andheri West, Mumbai",
+      timestamp: "2 hours ago",
+      action_taken: "Wife Meera administered home emergency EpiPen autoinjector. Dispatched to Kokilaben Hospital ER for IV hydrocortisone.",
+      status: "Airway Cleared · Under Observation"
+    },
+    {
+      id: "grd-7",
+      user_name: "Diya Sharma",
+      relation: "Daughter",
+      age: 15,
+      guardian_name: "Sanjay Sharma (Father)",
+      guardian_phone: "+91 98450 19283",
+      condition: "Severe acute right lower quadrant abdominal rebound pain (Appendicitis risk)",
+      severity: "high",
+      vitals: { temp: "101.8°F", pulse: 104, bp: "115/75 mmHg" },
+      trigger_source: "AI Triage Abdominal Urgency Match",
+      location: "Salt Lake Sector V, Kolkata",
+      timestamp: "3 hours ago",
+      action_taken: "Father Sanjay picked up Diya from school clinic and transferred to Apollo Children's Hospital for urgent abdominal ultrasound.",
+      status: "Under Ultrasound Scan"
+    },
+    {
+      id: "grd-8",
+      user_name: "Kamala Bai",
+      relation: "Grandmother",
+      age: 82,
+      guardian_name: "Vikram Rathi (Grandson)",
+      guardian_phone: "+91 94140 28192",
+      condition: "Severe acute hypoglycemia: Blood sugar 46 mg/dL, diaphoresis & confusion",
+      severity: "high",
+      vitals: { glucose: "46 mg/dL", pulse: 98, bp: "128/82 mmHg" },
+      trigger_source: "Continuous Glucose Sensor Telemetry",
+      location: "Navrangpura, Ahmedabad",
+      timestamp: "5 hours ago",
+      action_taken: "Grandson Vikram applied oral glucose paste onto buccal mucosa. Re-check verified blood glucose normalized to 112 mg/dL.",
+      status: "Glucose Normalized"
+    },
+    {
+      id: "grd-9",
+      user_name: "Deepika Rao",
+      relation: "Sister",
+      age: 29,
+      guardian_name: "Rahul Rao (Brother / Contact)",
+      guardian_phone: "+91 98840 19284",
+      condition: "34 weeks pregnant with severe headache, visual scotoma & BP 166/106 mmHg",
+      severity: "critical",
+      vitals: { bp: "166/106 mmHg", pulse: 96, temp: "98.6°F" },
+      trigger_source: "AI Triage Obstetric Emergency Rule",
+      location: "Gachibowli Financial District, Hyderabad",
+      timestamp: "Yesterday",
+      action_taken: "Brother Rahul rushed Deepika to Rainbow Children's Hospital OB-GYN emergency; Magnesium Sulfate infusion initiated for preeclampsia.",
+      status: "Admitted to Maternity HDU"
+    },
+    {
+      id: "grd-10",
+      user_name: "Baby Reyan",
+      relation: "Infant (Son)",
+      age: 1,
+      guardian_name: "Kavita Nair (Mother)",
+      guardian_phone: "+91 98200 48291",
+      condition: "Airway obstruction: Choking on small plastic bead with silent cough",
+      severity: "critical",
+      vitals: { pulse: 146, spo2: "91%" },
+      trigger_source: "AI Video Heimlich Maneuver Action Prompt",
+      location: "Pali Hill, Bandra West, Mumbai",
+      timestamp: "Yesterday",
+      action_taken: "Mother Kavita performed 5 back blows & 5 chest thrusts as shown on Silent Guardian Video Simulator. Bead expelled cleanly; infant breathing normally.",
+      status: "Airway Cleared · Routine Pediatric Check"
+    }
+  ];
+}
+
+
 

@@ -23,7 +23,7 @@ function getAudioContext(): AudioContext | null {
 /**
  * Plays soft synthesized acoustic feedback without external audio files.
  */
-export function playChime(type: 'start' | 'stop' | 'error') {
+export function playChime(type: 'start' | 'stop' | 'error' | 'urgent') {
   const ctx = getAudioContext();
   if (!ctx) return;
 
@@ -54,6 +54,16 @@ export function playChime(type: 'start' | 'stop' | 'error') {
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
       osc.start(now);
       osc.stop(now + 0.28);
+    } else if (type === 'urgent') {
+      // Rapid alert chime for Emergency / Guardian Dispatches
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.exponentialRampToValueAtTime(1046, now + 0.1);
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.2, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      osc.start(now);
+      osc.stop(now + 0.3);
     } else if (type === 'error') {
       // Low dual warning beep
       osc.frequency.setValueAtTime(320, now);

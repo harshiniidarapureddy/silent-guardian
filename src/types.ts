@@ -12,6 +12,8 @@ export interface Profile {
   user_id?: string;
   preferred_name: string;
   photo_url?: string;
+  gender?: 'Male' | 'Female' | 'Non-Binary' | 'Prefer not to say';
+  occupation?: 'Student' | 'Working Professional' | 'Healthcare Worker' | 'Homemaker' | 'Freelancer' | 'Senior Citizen' | 'Other';
   age_bracket: 'under5' | 'teen' | 'adult' | 'married' | 'graduate' | 'senior';
   language: string;
   location: string;
@@ -38,6 +40,19 @@ export interface Hospital {
   er_available: number;
   ventilator_available: number;
   emergency_open: boolean;
+  photos?: {
+    exterior: string;
+    interior_icu: string;
+    interior_ward: string;
+    equipment_suite: string;
+    er_bay: string;
+  };
+  interior_details?: {
+    room_types: Array<{ name: string; beds: number; daily_rate: number }>;
+    equipment_list: string[];
+    bed_types: string[] | { motorized_icu: string; ward: string };
+    accreditations: string[];
+  };
 }
 
 export interface PatientRecord {
@@ -101,6 +116,17 @@ export interface Medicine {
   efficacy_percent?: number;
   good_for?: string;
   warnings?: string;
+  indication_tags?: string[];
+  online_apps?: Array<{
+    name?: string;
+    app_id: string;
+    in_stock?: boolean;
+    price: number | string;
+    discount_percent: number;
+    delivery_eta: string;
+    buy_url: string;
+    logo_color: string;
+  }>;
 }
 
 export interface BedCapacity {
@@ -190,6 +216,7 @@ export interface NotificationItem {
   read: boolean;
   action_url?: string;
   action_label?: string;
+  target_role?: 'patient' | 'hospital' | 'admin' | 'all';
 }
 
 
@@ -219,10 +246,15 @@ export interface PharmacyItem {
 
 export interface FeedbackItem {
   id: string;
-  source: 'patient' | 'hospital';
+  source: 'patient' | 'hospital' | 'responder' | 'doctor';
   rating: number;
   message: string;
   created_at: string;
+  author_name?: string;
+  role_tag?: string;
+  category?: string;
+  sentiment?: 'positive' | 'constructive' | 'urgent';
+  response?: string;
 }
 
 export interface ScamReport {
@@ -232,6 +264,10 @@ export interface ScamReport {
   reported_details: string;
   status: 'flagged' | 'verified_scam' | 'resolved';
   created_at: string;
+  severity?: 'critical' | 'high' | 'medium';
+  location?: string;
+  investigation_notes?: string;
+  action_taken?: string;
 }
 
 export interface TriageMessage {
@@ -242,3 +278,27 @@ export interface TriageMessage {
   assistant_msg: string;
   ts: string;
 }
+
+export interface GuardianAlert {
+  id: string;
+  user_name: string;
+  relation: string;
+  age: number;
+  guardian_name: string;
+  guardian_phone: string;
+  condition: string;
+  severity: 'critical' | 'high' | 'medium';
+  vitals?: {
+    bp?: string;
+    pulse?: number;
+    temp?: string;
+    spo2?: string;
+    glucose?: string;
+  };
+  trigger_source: string;
+  location: string;
+  timestamp: string;
+  action_taken: string;
+  status: string;
+}
+
