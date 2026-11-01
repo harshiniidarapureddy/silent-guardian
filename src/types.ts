@@ -12,6 +12,7 @@ export interface Profile {
   user_id?: string;
   preferred_name: string;
   photo_url?: string;
+  age?: number;
   gender?: 'Male' | 'Female' | 'Non-Binary' | 'Prefer not to say';
   occupation?: 'Student' | 'Working Professional' | 'Healthcare Worker' | 'Homemaker' | 'Freelancer' | 'Senior Citizen' | 'Other';
   age_bracket: 'under5' | 'teen' | 'adult' | 'married' | 'graduate' | 'senior';
@@ -21,6 +22,7 @@ export interface Profile {
   guardian_contact?: string;
   managed_by_guardian: boolean;
   first_aid_cpr: boolean;
+  first_aid_level?: string;
   blood_group: string;
   willing_to_donate: boolean;
   updated_at?: string;
@@ -302,3 +304,60 @@ export interface GuardianAlert {
   status: string;
 }
 
+export interface WearableDevice {
+  id: string;
+  name: string;
+  brand: 'Apple' | 'Fitbit' | 'Garmin' | 'Samsung' | 'Oura' | 'Whoop' | 'BLE_Generic';
+  type: 'smartwatch' | 'fitness_band' | 'smart_ring' | 'chest_strap';
+  connected: boolean;
+  batteryLevel: number;
+  lastSync: string;
+  signalStrength: 'Strong' | 'Optimal' | 'Weak';
+}
+
+export interface VitalSignRecord {
+  heartRate: number; // BPM
+  restingHeartRate: number;
+  maxHeartRate: number;
+  minHeartRate: number;
+  hrv: number; // ms
+  spo2: number; // %
+  bloodPressureSys: number; // mmHg
+  bloodPressureDia: number; // mmHg
+  respiratoryRate: number; // breaths/min
+  skinTempCelsius: number;
+  stressScore: number; // 0-100
+  timestamp: string;
+}
+
+export interface HourlyHeartRatePoint {
+  hour: string; // e.g., "00:00", "04:00", "08:00", "12:00", "16:00", "20:00"
+  bpm: number;
+  zone: 'Deep Sleep' | 'Resting' | 'Light Walk' | 'Cardio Burn' | 'Peak Surge';
+  activity: string;
+}
+
+export interface StepTrackingRecord {
+  totalSteps: number;
+  goalSteps: number;
+  distanceKm: number;
+  caloriesBurned: number;
+  activeMinutes: number;
+  cadenceBpm: number;
+  strideCm: number;
+  isSensorTracking: boolean;
+  trackingMode: 'phone_accelerometer' | 'automated_ai_prediction' | 'wearable_synced';
+  hourlyDistribution: Array<{ hour: string; steps: number }>;
+}
+
+export interface GroundedSearchResult {
+  answer: string;
+  groundingChunks: Array<{
+    web?: {
+      uri: string;
+      title: string;
+    };
+  }>;
+  webSearchQueries?: string[];
+  simulated?: boolean;
+}

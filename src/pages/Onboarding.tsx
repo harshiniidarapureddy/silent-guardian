@@ -4,37 +4,49 @@ import { toast } from "sonner";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { Switch } from "../components/ui/switch";
-import { Shield, HeartPulse, Check, ArrowRight, ArrowLeft, Camera, Upload, User, Sparkles, GraduationCap, Briefcase } from "lucide-react";
+import {
+  Shield, HeartPulse, Check, ArrowRight, ArrowLeft, Camera, Upload, User,
+  Sparkles, Heart, Users, MapPin, Award, CheckCircle2, Globe, AlertCircle, Phone,
+  Play, Video, Zap, Eye
+} from "lucide-react";
 import { api, getUser, saveAuth } from "../lib/api";
+import { OnboardingVideoExplainer } from "../components/patient/OnboardingVideoExplainer";
 
 const LANGS = [
   { v: "en", l: "English (Global)" },
-  { v: "hi", l: "हिन्दी (Hindi)" },
   { v: "te", l: "తెలుగు (Telugu)" },
+  { v: "hi", l: "हिन्दी (Hindi)" },
   { v: "ta", l: "தமிழ் (Tamil)" },
   { v: "bn", l: "বাংলা (Bengali)" },
   { v: "es", l: "Español (Spanish)" },
 ];
 
-const BLOOD = ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"];
+const BLOOD_GROUPS = ["O+", "O-", "A+", "A-", "B+", "B-", "AB+", "AB-"];
 
 const GENDERS = [
-  { value: "Male", label: "Male 👨" },
-  { value: "Female", label: "Female 👩" },
-  { value: "Non-Binary", label: "Non-Binary 🧑" },
-  { value: "Prefer not to say", label: "Prefer not to say 🔒" },
+  { value: "Male", label: "Male" },
+  { value: "Female", label: "Female" },
+  { value: "Non-Binary", label: "Non-Binary" },
+  { value: "Prefer not to say", label: "Prefer not to say" },
 ];
 
-const OCCUPATIONS = [
-  { value: "Student", label: "🎓 Student (School / College / University)" },
-  { value: "Working Professional", label: "💼 Working Professional / Corporate" },
-  { value: "Healthcare Worker", label: "🏥 Healthcare Worker / EMT / First Responder" },
-  { value: "Homemaker", label: "🏡 Homemaker / Family Caregiver" },
-  { value: "Freelancer", label: "🚀 Freelancer / Self-Employed" },
-  { value: "Senior Citizen", label: "👴 Senior Citizen / Retired" },
-  { value: "Other", label: "🌟 Other" },
+const FIRST_AID_OPTIONS = [
+  { value: "trained", label: "Trained in CPR & Basic First Aid", hasCpr: true },
+  { value: "certified", label: "Certified First Responder / EMT / Nurse", hasCpr: true },
+  { value: "basic", label: "Basic Awareness / Self-Taught", hasCpr: true },
+  { value: "none", label: "No prior training / Need Guidance", hasCpr: false },
+];
+
+const POPULAR_LOCATIONS = [
+  "Hyderabad",
+  "Bengaluru",
+  "Mumbai",
+  "Delhi NCR",
+  "Chennai",
+  "Kolkata",
+  "Pune",
+  "Ahmedabad",
+  "Other"
 ];
 
 export const ANIME_AVATARS_COLLECTION = [
@@ -54,29 +66,38 @@ export const ANIME_AVATARS_COLLECTION = [
 
 export default function Onboarding() {
   const navigate = useNavigate();
+  const currentUser = getUser();
   const [step, setStep] = useState(1);
-  const [data, setData] = useState({
-    preferred_name: "",
-    gender: "Male" as any,
-    occupation: "Student" as any,
-    age: "22",
-    age_bracket: "adult" as any,
-    blood_group: "O+",
-    language: "en",
-    location: "Hyderabad",
-    photo_url: ANIME_AVATARS_COLLECTION[0].url,
-    guardian_name: "",
-    guardian_contact: "",
-    managed_by_guardian: false,
-    first_aid_cpr: true,
-    willing_to_donate: true,
-  });
+  const [saving, setSaving] = useState(false);
 
-  const [previewPhoto, setPreviewPhoto] = useState<string>(ANIME_AVATARS_COLLECTION[0].url);
+  // Step 1: What should we call you? + Age, Gender, Language, Location, Phone
+  const [name, setName] = useState(currentUser?.preferred_name || "");
+  const [phone, setPhone] = useState(currentUser?.phone || "");
+  const [age, setAge] = useState("24");
+  const [gender, setGender] = useState("Male");
+  const [language, setLanguage] = useState("en");
+  const [location, setLocation] = useState("Hyderabad");
+  const [customLocation, setCustomLocation] = useState("");
 
-  const set = (k: string) => (v: any) => setData((d) => ({ ...d, [k]: v }));
+  // Step 2: Blood group + Willing to donate + First aid / CPR / nursing
+  const [bloodGroup, setBloodGroup] = useState("O+");
+  const [willingToDonate, setWillingToDonate] = useState(true);
+  const [firstAidLevel, setFirstAidLevel] = useState("trained");
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Step 3: Guardian details + Consent protocols
+  const [guardianName, setGuardianName] = useState("");
+  const [guardianPhone, setGuardianPhone] = useState("");
+  const [agreeConsent, setAgreeConsent] = useState(true);
+
+  const [selectedAvatar, setSelectedAvatar] = useState(ANIME_AVATARS_COLLECTION[0].url);
+  const [customPhoto, setCustomPhoto] = useState<string | null>(null);
+  const [showVideoExplainer, setShowVideoExplainer] = useState(false);
+  const [showInlineGuardianVideo, setShowInlineGuardianVideo] = useState(false);
+
+  const activePhoto = customPhoto || selectedAvatar;
+  const effectiveLocation = location === "Other" && customLocation.trim() ? customLocation.trim() : location;
+
+  const handleCustomUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
@@ -86,351 +107,391 @@ export default function Onboarding() {
       const reader = new FileReader();
       reader.onloadend = () => {
         const result = reader.result as string;
-        setPreviewPhoto(result);
-        set("photo_url")(result);
+        setCustomPhoto(result);
         toast.success("Custom profile photo uploaded!");
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const selectAnimeAvatar = (url: string) => {
-    setPreviewPhoto(url);
-    set("photo_url")(url);
-    toast.success("Anime avatar selected!");
+  const handleNextStep1 = () => {
+    if (!name.trim()) {
+      toast.error("Please enter what we should call you (e.g. Ramesh Sharma).");
+      return;
+    }
+    const numAge = parseInt(age, 10);
+    if (isNaN(numAge) || numAge < 1 || numAge > 120) {
+      toast.error("Please enter a valid age between 1 and 120.");
+      return;
+    }
+    setStep(2);
   };
 
-  const submit = async () => {
+  const handleNextStep2 = () => {
+    if (!bloodGroup) {
+      toast.error("Please select your blood group.");
+      return;
+    }
+    setStep(3);
+  };
+
+  const handleNextStep3 = () => {
+    if (!guardianName.trim()) {
+      toast.error("Please provide an emergency guardian name (e.g. Sita Sharma / Mother).");
+      return;
+    }
+    if (!guardianPhone.trim()) {
+      toast.error("Please provide an emergency guardian phone number.");
+      return;
+    }
+    if (!agreeConsent) {
+      toast.error("Please accept the medical safety protocols to proceed.");
+      return;
+    }
+    setStep(4);
+  };
+
+  const submitFinalProfile = async () => {
+    setSaving(true);
     try {
-      await api.post("/profile", data);
+      const selectedFa = FIRST_AID_OPTIONS.find(f => f.value === firstAidLevel);
+      const parsedAge = parseInt(age, 10) || 24;
+      const ageBracket = parsedAge < 18 ? "teen" : parsedAge >= 60 ? "senior" : "adult";
+
+      const profilePayload = {
+        preferred_name: name.trim(),
+        phone: phone.trim() || undefined,
+        age: parsedAge,
+        gender,
+        age_bracket: ageBracket,
+        language,
+        location: effectiveLocation,
+        blood_group: bloodGroup,
+        willing_to_donate: willingToDonate,
+        first_aid_cpr: selectedFa?.hasCpr ?? true,
+        first_aid_level: selectedFa?.label || "Trained in CPR & Basic First Aid",
+        guardian_name: guardianName.trim(),
+        guardian_contact: guardianPhone.trim(),
+        managed_by_guardian: Boolean(guardianName.trim()),
+        photo_url: activePhoto,
+        consent_agreed: true,
+      };
+
+      await api.post("/profile", profilePayload);
+
       const u = getUser();
       if (u) {
         saveAuth(localStorage.getItem("sg_token") || "token", {
           ...u,
           onboarded: true,
-          preferred_name: data.preferred_name || "User",
+          preferred_name: name.trim() || u.preferred_name,
         });
       }
-      toast.success("Welcome to Silent Guardian, " + (data.preferred_name || "User") + "!");
+
+      toast.success(`Welcome to Care Preempt, ${name.trim()}! Your safety profile is fully active.`);
       window.dispatchEvent(new Event("profile-updated"));
       navigate("/patient");
-    } catch (e: any) {
-      toast.error(e.response?.data?.detail || "Could not save profile");
+    } catch (err: any) {
+      toast.error(err?.response?.data?.detail || err?.message || "Failed to save profile. Please try again.");
+    } finally {
+      setSaving(false);
     }
   };
 
-  const canProceedStep1 = data.preferred_name.trim().length > 0 && Number(data.age) > 0 && !!data.blood_group;
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-950 to-teal-950 flex items-center justify-center p-4 py-12">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-950 to-teal-950 flex items-center justify-center p-4 py-10">
       <div className="w-full max-w-2xl">
-        <div className="rounded-3xl bg-white border border-slate-200/90 shadow-2xl p-6 sm:p-10 sg-fade-in">
-          
-          {/* Header Progress Bar */}
-          <div className="flex items-center justify-between mb-8 pb-4 border-b border-slate-100">
+        {/* Interactive Video Explainer Banner */}
+        <div className="mb-4 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-slate-900 via-teal-950 to-slate-900 border border-teal-500/30 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xl">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-teal-500/20 border border-teal-400/40 flex items-center justify-center text-teal-300 shrink-0">
+              <Play size={18} className="fill-teal-300" />
+            </div>
             <div>
-              <div className="text-xs uppercase tracking-[0.2em] font-bold text-teal-700 flex items-center gap-1.5">
-                <Sparkles size={14} />
-                <span>STEP {step} OF 2 · PROFILE SETUP</span>
+              <div className="text-xs font-bold text-white flex items-center gap-2">
+                <span>See How AI Triage Protects You</span>
+                <span className="text-[10px] bg-teal-800 text-teal-200 px-2 py-0.5 rounded-full font-mono font-bold">Interactive</span>
               </div>
-              <h1 className="font-display text-2xl sm:text-3xl font-bold text-slate-900 mt-1">
-                {step === 1 && "Personal Identity & Anime Avatar"}
-                {step === 2 && "Emergency Guardian & Medical Preferences"}
-              </h1>
-              <p className="text-xs text-slate-500 mt-1">
-                {step === 1 && "Select your gender, occupation (e.g. Student), vitals, and chosen Anime Avatar."}
-                {step === 2 && "Add your family emergency contact and CPR volunteer preferences."}
+              <p className="text-[11px] text-slate-300">
+                Step-by-step visual breakdown with clickable annotations: Biometric sensors, Guardian SMS & ICU bed locks.
               </p>
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center flex-shrink-0 shadow-sm">
-              <HeartPulse size={24} />
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => setShowVideoExplainer(true)}
+            className="h-9 px-4 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs shrink-0 cursor-pointer shadow-md inline-flex items-center gap-1.5"
+          >
+            <span>Watch Video Breakdown</span>
+            <ArrowRight size={13} />
+          </Button>
+        </div>
+
+        <div className="rounded-3xl bg-white border border-slate-200/90 shadow-2xl p-6 sm:p-10 sg-fade-in">
+          
+          {/* Header Progress Stepper */}
+          <div className="mb-8 pb-5 border-b border-slate-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-[11px] uppercase tracking-[0.2em] font-bold text-teal-700 flex items-center gap-1.5">
+                  <Sparkles size={14} />
+                  <span>STEP {step} OF 4 · CLINICAL ONBOARDING</span>
+                </div>
+                <h1 className="font-display text-2xl sm:text-3xl font-bold text-slate-900 mt-1">
+                  {step === 1 && "Identity & Demographics"}
+                  {step === 2 && "Clinical Profile & Blood Net"}
+                  {step === 3 && "Emergency Guardian & Protocols"}
+                  {step === 4 && "Choose Your Avatar"}
+                </h1>
+                <p className="text-xs text-slate-500 mt-1">
+                  {step === 1 && "First, tell us what to call you and share your basic demographic details."}
+                  {step === 2 && "Share your blood group and community emergency response capabilities."}
+                  {step === 3 && "Register your family emergency guardian for automated AI triage SMS."}
+                  {step === 4 && "Choose an anime avatar or upload a photo for your medical pass."}
+                </p>
+              </div>
+              <div className="w-12 h-12 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center shrink-0 shadow-sm">
+                <HeartPulse size={24} />
+              </div>
+            </div>
+
+            {/* Stepper Dots */}
+            <div className="grid grid-cols-4 gap-2 mt-5">
+              {[1, 2, 3, 4].map((s) => (
+                <div key={s} className="space-y-1">
+                  <div
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      s < step
+                        ? "bg-teal-600"
+                        : s === step
+                        ? "bg-teal-700 ring-2 ring-teal-200"
+                        : "bg-slate-200"
+                    }`}
+                  />
+                  <div className="text-[10px] font-bold text-center text-slate-500">
+                    {s === 1 && "Identity"}
+                    {s === 2 && "Blood & CPR"}
+                    {s === 3 && "Guardian"}
+                    {s === 4 && "Avatar"}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* STEP 1: Name, Gender, Student / Occupation, Age, Blood Group & Anime Avatar Collection */}
+          {/* ========================================================================= */}
+          {/* STEP 1: What should we call you? + Age, Gender, Language, Location */}
+          {/* ========================================================================= */}
           {step === 1 && (
-            <div className="space-y-6">
-              
-              {/* 1. Full Name */}
-              <div>
-                <Label className="text-xs font-bold text-slate-700">Full Name *</Label>
-                <Input
-                  value={data.preferred_name}
-                  onChange={(e) => set("preferred_name")(e.target.value)}
-                  placeholder="e.g. Ramesh Sharma or Ananya Rao"
-                  className="mt-1.5 h-11 text-sm"
-                  required
-                />
+            <div className="space-y-5">
+              <div className="p-4 bg-teal-50/70 border border-teal-200/80 rounded-2xl">
+                <Label className="text-sm font-bold text-teal-950 flex items-center gap-2">
+                  <User size={16} className="text-teal-700" />
+                  <span>What should we call you? (Full Legal Name) *</span>
+                </Label>
+                <p className="text-xs text-teal-800 mt-0.5">
+                  Used on emergency hospital admittance slips and triage badges.
+                </p>
+                <div className="relative mt-2">
+                  <User size={15} className="absolute left-3 top-3 text-slate-400" />
+                  <Input
+                    type="text"
+                    required
+                    placeholder="e.g. Ramesh Sharma"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="pl-9 h-11 text-sm bg-white"
+                  />
+                </div>
               </div>
 
-              {/* 2. Gender & Age */}
+              {/* Mobile Phone */}
+              <div>
+                <Label className="text-xs font-semibold text-slate-700">Mobile Phone (Emergency SMS)</Label>
+                <div className="relative mt-1">
+                  <Phone size={15} className="absolute left-3 top-3 text-slate-400" />
+                  <Input
+                    type="tel"
+                    placeholder="+91 98450 12345"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="pl-9 h-10 text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* Age & Gender */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs font-bold text-slate-700">Gender *</Label>
-                  <Select value={data.gender} onValueChange={set("gender")}>
-                    <SelectTrigger className="mt-1.5 h-11 text-xs">
-                      <SelectValue placeholder="Select Gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {GENDERS.map((g) => (
-                        <SelectItem key={g.value} value={g.value} className="text-xs">
-                          {g.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label className="text-xs font-bold text-slate-700">Age in Years *</Label>
+                  <Label className="text-xs font-semibold text-slate-700">Age (Years) *</Label>
                   <Input
                     type="number"
-                    min="1"
-                    max="115"
-                    value={data.age}
-                    onChange={(e) => set("age")(e.target.value)}
-                    placeholder="e.g. 21"
-                    className="mt-1.5 h-11 text-xs font-mono"
+                    min={1}
+                    max={120}
                     required
+                    value={age}
+                    onChange={(e) => setAge(e.target.value)}
+                    placeholder="24"
+                    className="mt-1 h-10 text-xs font-bold text-slate-900 font-mono"
                   />
+                </div>
+
+                <div>
+                  <Label className="text-xs font-semibold text-slate-700">Gender *</Label>
+                  <select
+                    value={gender}
+                    onChange={(e) => setGender(e.target.value)}
+                    className="mt-1 w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-600"
+                  >
+                    {GENDERS.map((g) => (
+                      <option key={g.value} value={g.value}>{g.label}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
-              {/* 3. Occupation / Student Status */}
-              <div>
-                <Label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                  <GraduationCap size={15} className="text-teal-700" />
-                  <span>Are you a Student, Working Professional, or Caregiver? *</span>
-                </Label>
-                <Select value={data.occupation} onValueChange={set("occupation")}>
-                  <SelectTrigger className="mt-1.5 h-11 text-xs">
-                    <SelectValue placeholder="Select Status / Occupation" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {OCCUPATIONS.map((occ) => (
-                      <SelectItem key={occ.value} value={occ.value} className="text-xs">
-                        {occ.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* 4. Blood Group & Location */}
+              {/* Language & Location */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs font-bold text-slate-700">Blood Group *</Label>
-                  <Select value={data.blood_group} onValueChange={set("blood_group")}>
-                    <SelectTrigger className="mt-1.5 h-11 text-xs">
-                      <SelectValue placeholder="Select Blood Group" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {BLOOD.map((b) => (
-                        <SelectItem key={b} value={b}>
-                          <span className="font-bold text-red-600 mr-1.5">●</span>
-                          {b}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                    <Globe size={13} className="text-teal-700" />
+                    <span>Preferred Language *</span>
+                  </Label>
+                  <select
+                    value={language}
+                    onChange={(e) => setLanguage(e.target.value)}
+                    className="mt-1 w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-600"
+                  >
+                    {LANGS.map((l) => (
+                      <option key={l.v} value={l.v}>{l.l}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
-                  <Label className="text-xs font-bold text-slate-700">City / Metro Location</Label>
+                  <Label className="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                    <MapPin size={13} className="text-teal-700" />
+                    <span>Current City / Location *</span>
+                  </Label>
+                  <select
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="mt-1 w-full h-10 rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-800 focus:outline-none focus:ring-1 focus:ring-teal-600"
+                  >
+                    {POPULAR_LOCATIONS.map((loc) => (
+                      <option key={loc} value={loc}>{loc}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {location === "Other" && (
+                <div>
+                  <Label className="text-xs font-semibold text-slate-700">Type Your City / Town Name *</Label>
                   <Input
-                    value={data.location}
-                    onChange={(e) => set("location")(e.target.value)}
-                    placeholder="e.g. Hyderabad, Delhi, Bengaluru"
-                    className="mt-1.5 h-11 text-xs"
+                    type="text"
+                    placeholder="e.g. Visakhapatnam, Chandigarh"
+                    value={customLocation}
+                    onChange={(e) => setCustomLocation(e.target.value)}
+                    className="mt-1 h-10 text-xs"
                   />
                 </div>
-              </div>
+              )}
 
-              {/* 5. Preferred Language */}
-              <div>
-                <Label className="text-xs font-bold text-slate-700">Preferred Medical Language</Label>
-                <Select value={data.language} onValueChange={set("language")}>
-                  <SelectTrigger className="mt-1.5 h-11 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {LANGS.map((l) => (
-                      <SelectItem key={l.v} value={l.v}>{l.l}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* 6. ANIME AVATAR COLLECTION SELECTOR */}
-              <div className="pt-2 border-t border-slate-100 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                      <Sparkles size={14} className="text-purple-600" />
-                      Choose Your Anime Avatar Collection ({ANIME_AVATARS_COLLECTION.length})
-                    </span>
-                    <span className="text-[10px] bg-purple-100 text-purple-800 font-bold px-2 py-0.5 rounded-md">
-                      Official Collection
-                    </span>
-                  </div>
-                  <span className="text-[11px] text-purple-600 font-semibold hidden sm:inline">
-                    Tap to select avatar
-                  </span>
-                </div>
-
-                {/* Selected Active Avatar Card */}
-                <div className="p-3.5 bg-gradient-to-r from-purple-50 via-slate-50 to-teal-50 border border-purple-200/80 rounded-2xl flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-14 h-14 rounded-2xl overflow-hidden border-2 border-purple-500 shadow-sm bg-white shrink-0">
-                      <img src={previewPhoto} alt="Selected Avatar" className="w-full h-full object-cover" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-slate-900">
-                        {ANIME_AVATARS_COLLECTION.find(a => a.url === previewPhoto)?.name || "Custom Avatar"}
-                      </div>
-                      <div className="text-[11px] text-purple-700 font-medium">
-                        {ANIME_AVATARS_COLLECTION.find(a => a.url === previewPhoto)?.title || "User Profile Photo"}
-                      </div>
-                      <div className="text-[10px] text-slate-400 mt-0.5">
-                        Selected for your safety profile & triage card
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Optional File Upload button */}
-                  <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer shadow-xs transition-all shrink-0">
-                    <Upload size={13} />
-                    <span>Upload Own</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-
-                {/* 12 Anime Avatars Grid */}
-                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2.5 max-h-48 overflow-y-auto p-2 bg-slate-50 rounded-2xl border border-slate-200 sg-scrollbar">
-                  {ANIME_AVATARS_COLLECTION.map((av) => {
-                    const isSelected = previewPhoto === av.url;
-                    return (
-                      <button
-                        key={av.id}
-                        type="button"
-                        onClick={() => selectAnimeAvatar(av.url)}
-                        className={`group relative rounded-2xl overflow-hidden aspect-square border-2 transition-all cursor-pointer ${
-                          isSelected
-                            ? "border-purple-600 ring-2 ring-purple-400/50 scale-105 shadow-md bg-purple-100"
-                            : "border-slate-200 hover:border-purple-300 bg-white"
-                        }`}
-                        title={`${av.name} · ${av.title}`}
-                      >
-                        <img src={av.url} alt={av.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
-                        {isSelected && (
-                          <div className="absolute inset-0 bg-purple-600/30 backdrop-blur-xs flex items-center justify-center">
-                            <Check size={18} className="text-white drop-shadow-md font-bold" />
-                          </div>
-                        )}
-                        <span className="absolute bottom-0 inset-x-0 bg-slate-900/80 text-[9px] text-white font-bold text-center truncate px-1 py-0.5">
-                          {av.name}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Next Step Button */}
+              {/* Step 1 Continue */}
               <div className="pt-4 flex justify-end">
                 <Button
                   type="button"
-                  onClick={() => {
-                    if (!canProceedStep1) {
-                      toast.error("Please enter your name, age, and blood group.");
-                      return;
-                    }
-                    setStep(2);
-                  }}
-                  disabled={!canProceedStep1}
+                  onClick={handleNextStep1}
                   className="h-11 px-6 rounded-full bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs shadow-md inline-flex items-center gap-2 cursor-pointer"
                 >
-                  <span>Continue to Emergency Circle</span>
+                  <span>Continue to Blood & First Aid</span>
                   <ArrowRight size={15} />
                 </Button>
               </div>
             </div>
           )}
 
-          {/* STEP 2: Emergency Guardian & Preferences */}
+          {/* ========================================================================= */}
+          {/* STEP 2: Blood group + Willing to donate + First aid / CPR / nursing */}
+          {/* ========================================================================= */}
           {step === 2 && (
-            <div className="space-y-6">
+            <div className="space-y-5">
               
-              {/* Profile Confirmation Card */}
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between text-xs">
-                <div className="flex items-center gap-3">
-                  <img src={previewPhoto} alt="Profile" className="w-12 h-12 rounded-xl object-cover border border-purple-300" />
-                  <div>
-                    <strong className="text-slate-900 text-sm">{data.preferred_name}</strong>
-                    <div className="text-slate-500 text-[11px]">
-                      {data.gender} · {data.age} yrs · {data.occupation}
-                    </div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <span className="px-2.5 py-1 rounded-full bg-red-100 text-red-700 font-bold font-mono text-xs">
-                    Blood: {data.blood_group}
-                  </span>
-                  <div className="text-slate-400 text-[10px] mt-1">{data.location}</div>
-                </div>
-              </div>
-
-              {/* Guardian Emergency Contact */}
-              <div className="space-y-4 p-4 rounded-2xl bg-amber-50/60 border border-amber-200/80">
-                <div className="font-bold text-xs uppercase tracking-wider text-amber-900 flex items-center gap-1.5">
-                  <Shield size={14} className="text-amber-700" />
-                  Family Emergency Guardian (Receives Live Alerts)
-                </div>
-
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-xs font-semibold text-slate-700">Guardian Name</Label>
-                    <Input
-                      value={data.guardian_name}
-                      onChange={(e) => set("guardian_name")(e.target.value)}
-                      placeholder="e.g. Sita Sharma (Mother) or Rohan"
-                      className="mt-1 h-10 text-xs bg-white"
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="text-xs font-semibold text-slate-700">Guardian Phone Number</Label>
-                    <Input
-                      value={data.guardian_contact}
-                      onChange={(e) => set("guardian_contact")(e.target.value)}
-                      placeholder="+91-98490-11223"
-                      className="mt-1 h-10 text-xs bg-white font-mono"
-                    />
-                  </div>
+              {/* Blood Group */}
+              <div>
+                <Label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <Heart size={14} className="text-rose-600" />
+                  <span>Blood Group *</span>
+                </Label>
+                <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 mt-2">
+                  {BLOOD_GROUPS.map((bg) => {
+                    const isSelected = bloodGroup === bg;
+                    return (
+                      <button
+                        key={bg}
+                        type="button"
+                        onClick={() => setBloodGroup(bg)}
+                        className={`h-11 rounded-xl font-bold font-mono text-sm border transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-rose-600 text-white border-rose-700 shadow-md scale-105"
+                            : "bg-white text-slate-700 border-slate-200 hover:border-rose-300"
+                        }`}
+                      >
+                        {bg}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
-              {/* Health Preferences */}
-              <div className="space-y-3 pt-2">
-                <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 bg-white">
-                  <div>
-                    <div className="text-xs font-bold text-slate-900">Trained in CPR & First Aid?</div>
-                    <div className="text-[11px] text-slate-500">Allows receiving nearby bystander cardiac collapse alerts</div>
-                  </div>
-                  <Switch checked={data.first_aid_cpr} onCheckedChange={set("first_aid_cpr")} />
+              {/* Willing to Donate Blood in Emergencies Checkbox */}
+              <div className="p-4 rounded-2xl bg-rose-50/80 border border-rose-200/80 flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="willingToDonate"
+                  checked={willingToDonate}
+                  onChange={(e) => setWillingToDonate(e.target.checked)}
+                  className="mt-1 rounded text-rose-600 focus:ring-rose-500 h-5 w-5 cursor-pointer"
+                />
+                <div>
+                  <label htmlFor="willingToDonate" className="text-xs font-bold text-rose-950 cursor-pointer block">
+                    Willing to Donate Blood in Emergencies
+                  </label>
+                  <p className="text-[11px] text-rose-800 leading-relaxed mt-1">
+                    Enrolls you in Care Preempt's community rare-blood emergency net so nearby hospitals can reach you during critical transfusions.
+                  </p>
                 </div>
+              </div>
 
-                <div className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200 bg-white">
-                  <div>
-                    <div className="text-xs font-bold text-slate-900">Willing to be a Volunteer Blood Donor?</div>
-                    <div className="text-[11px] text-slate-500">Notify me when someone near me urgently needs {data.blood_group} blood</div>
-                  </div>
-                  <Switch checked={data.willing_to_donate} onCheckedChange={set("willing_to_donate")} />
+              {/* Do You Know First Aid / CPR? */}
+              <div>
+                <Label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <Award size={15} className="text-teal-700" />
+                  <span>Do You Know First Aid / CPR / Nursing? *</span>
+                </Label>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Helps our network coordinate nearby certified bystander response during cardiac arrests.
+                </p>
+                <div className="space-y-2 mt-2">
+                  {FIRST_AID_OPTIONS.map((fa) => {
+                    const isSelected = firstAidLevel === fa.value;
+                    return (
+                      <div
+                        key={fa.value}
+                        onClick={() => setFirstAidLevel(fa.value)}
+                        className={`p-3 rounded-xl border text-xs font-medium flex items-center justify-between cursor-pointer transition-all ${
+                          isSelected
+                            ? "bg-teal-50 border-teal-600 text-teal-950 ring-1 ring-teal-600 font-semibold"
+                            : "bg-white border-slate-200 text-slate-700 hover:border-slate-300"
+                        }`}
+                      >
+                        <span>{fa.label}</span>
+                        {isSelected && <Check size={16} className="text-teal-700 shrink-0" />}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -443,22 +504,256 @@ export default function Onboarding() {
                   className="h-11 px-5 rounded-full text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
                 >
                   <ArrowLeft size={14} />
-                  <span>Back to Profile</span>
+                  <span>Back to Identity</span>
                 </Button>
 
                 <Button
                   type="button"
-                  onClick={submit}
+                  onClick={handleNextStep2}
+                  className="h-11 px-6 rounded-full bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs shadow-md inline-flex items-center gap-2 cursor-pointer"
+                >
+                  <span>Continue to Guardian Details</span>
+                  <ArrowRight size={15} />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* STEP 3: Emergency Guardian & Safety Protocols */}
+          {/* ========================================================================= */}
+          {step === 3 && (
+            <div className="space-y-5">
+              
+              <div className="p-4 bg-amber-50/70 border border-amber-200/90 rounded-2xl space-y-3">
+                <div className="flex items-center gap-2 text-xs font-bold text-amber-950 uppercase tracking-wider">
+                  <Users size={16} className="text-amber-700" />
+                  <span>Emergency Family Guardian Contact</span>
+                </div>
+                
+                <div>
+                  <Label className="text-xs font-semibold text-slate-700">Guardian Name *</Label>
+                  <Input
+                    type="text"
+                    required
+                    placeholder="e.g. Sita Sharma / Mother"
+                    value={guardianName}
+                    onChange={(e) => setGuardianName(e.target.value)}
+                    className="mt-1 h-10 text-xs bg-white"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs font-semibold text-slate-700">Guardian Phone *</Label>
+                  <Input
+                    type="tel"
+                    required
+                    placeholder="+91 98490 22334"
+                    value={guardianPhone}
+                    onChange={(e) => setGuardianPhone(e.target.value)}
+                    className="mt-1 h-10 text-xs bg-white font-mono"
+                  />
+                </div>
+
+                <div className="p-2.5 bg-amber-100/60 rounded-xl border border-amber-200 text-[11px] text-amber-900 leading-relaxed">
+                  <strong>Notice:</strong> Our AI Triage automatically triggers an emergency SMS and GPS beacon to this number when high-severity symptoms are flagged.
+                </div>
+
+                {/* Interactive Explainer Callout inside Guardian Step */}
+                <div className="p-3 bg-gradient-to-r from-teal-950 via-slate-900 to-teal-950 rounded-xl border border-teal-500/40 text-white flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-teal-500/20 flex items-center justify-center text-teal-300 shrink-0">
+                      <Zap size={16} />
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold text-white">How Guardian AI SMS Works</div>
+                      <p className="text-[10px] text-teal-200">Watch the interactive video breakdown with clickable annotations</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowVideoExplainer(true)}
+                    className="px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs shrink-0 cursor-pointer flex items-center gap-1 shadow-sm"
+                  >
+                    <Play size={12} className="fill-white" />
+                    <span>Watch (60s)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Protocol Consent Checkbox */}
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="agreeConsent"
+                  checked={agreeConsent}
+                  onChange={(e) => setAgreeConsent(e.target.checked)}
+                  className="mt-1 rounded text-teal-700 focus:ring-teal-600 h-5 w-5 cursor-pointer"
+                />
+                <div>
+                  <label htmlFor="agreeConsent" className="text-xs font-semibold text-slate-800 leading-relaxed cursor-pointer block">
+                    I agree to the Care Preempt emergency medical safety protocols and consent to storing my blood group, age, and emergency contact for verified responder coordination. *
+                  </label>
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Your medical profile is strictly encrypted (AES-256) and only revealed to certified 108 emergency paramedics and trauma admissions.
+                  </p>
+                </div>
+              </div>
+
+              {/* Navigation Buttons */}
+              <div className="pt-4 flex items-center justify-between border-t border-slate-100">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setStep(2)}
+                  className="h-11 px-5 rounded-full text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <ArrowLeft size={14} />
+                  <span>Back to Blood & First Aid</span>
+                </Button>
+
+                <Button
+                  type="button"
+                  onClick={handleNextStep3}
+                  className="h-11 px-6 rounded-full bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs shadow-md inline-flex items-center gap-2 cursor-pointer"
+                >
+                  <span>Continue to Avatar Selection</span>
+                  <ArrowRight size={15} />
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* STEP 4: Choose Your Avatar */}
+          {/* ========================================================================= */}
+          {step === 4 && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="font-display text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <Sparkles size={18} className="text-purple-600" />
+                  <span>Choose Your Avatar</span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Select an anime avatar or upload your photo for your emergency triage pass & hospital wristband.
+                </p>
+              </div>
+
+              {/* Active Avatar Preview Card */}
+              <div className="p-4 bg-gradient-to-r from-purple-50 via-slate-50 to-teal-50 border border-purple-200 rounded-2xl flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-16 h-16 rounded-2xl overflow-hidden border-2 border-purple-500 shadow-sm bg-white shrink-0">
+                    <img src={activePhoto} alt="Selected Avatar" className="w-full h-full object-cover" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-slate-900">
+                      {name || "Your Profile"}
+                    </div>
+                    <div className="text-xs text-purple-700 font-medium">
+                      {customPhoto
+                        ? "Custom Uploaded Photo"
+                        : ANIME_AVATARS_COLLECTION.find(a => a.url === selectedAvatar)?.title || "Anime Avatar"}
+                    </div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">
+                      {gender} · {age} yrs · Blood {bloodGroup} · {effectiveLocation}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Upload Button */}
+                <label className="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer shadow-xs transition-all shrink-0">
+                  <Upload size={14} />
+                  <span>Upload Photo</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleCustomUpload}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              {/* 12 Anime Avatars Gallery */}
+              <div>
+                <Label className="text-xs font-bold text-slate-800 mb-2 block">
+                  Select Anime Avatar Collection ({ANIME_AVATARS_COLLECTION.length})
+                </Label>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2.5 max-h-56 overflow-y-auto p-2.5 bg-slate-50 rounded-2xl border border-slate-200 sg-scrollbar">
+                  {ANIME_AVATARS_COLLECTION.map((av) => {
+                    const isSelected = !customPhoto && selectedAvatar === av.url;
+                    return (
+                      <button
+                        key={av.id}
+                        type="button"
+                        onClick={() => {
+                          setCustomPhoto(null);
+                          setSelectedAvatar(av.url);
+                        }}
+                        className={`group relative rounded-2xl overflow-hidden aspect-square border-2 transition-all cursor-pointer ${
+                          isSelected
+                            ? "border-purple-600 ring-2 ring-purple-400/50 scale-105 shadow-md bg-purple-100"
+                            : "border-slate-200 hover:border-purple-300 bg-white"
+                        }`}
+                        title={`${av.name} · ${av.title}`}
+                      >
+                        <img src={av.url} alt={av.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                        {isSelected && (
+                          <div className="absolute inset-0 bg-purple-600/30 backdrop-blur-xs flex items-center justify-center">
+                            <Check size={20} className="text-white drop-shadow-md font-bold" />
+                          </div>
+                        )}
+                        <span className="absolute bottom-0 inset-x-0 bg-slate-900/80 text-[10px] text-white font-bold text-center truncate px-1 py-0.5">
+                          {av.name}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Navigation & Submit Buttons */}
+              <div className="pt-4 flex items-center justify-between border-t border-slate-100">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setStep(3)}
+                  className="h-11 px-5 rounded-full text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+                >
+                  <ArrowLeft size={14} />
+                  <span>Back to Guardian</span>
+                </Button>
+
+                <Button
+                  type="button"
+                  onClick={submitFinalProfile}
+                  disabled={saving}
                   className="h-11 px-8 rounded-full bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs shadow-md flex items-center gap-2 cursor-pointer"
                 >
-                  <span>Complete Setup & Enter Portal</span>
-                  <Check size={16} />
+                  {saving ? (
+                    "Saving Profile..."
+                  ) : (
+                    <>
+                      <span>Complete & Open Safety Dashboard</span>
+                      <Check size={16} />
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* Interactive Video Explainer Modal */}
+      {showVideoExplainer && (
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="w-full max-w-4xl py-6 my-auto">
+            <OnboardingVideoExplainer
+              onClose={() => setShowVideoExplainer(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

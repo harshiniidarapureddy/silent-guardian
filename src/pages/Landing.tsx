@@ -31,8 +31,8 @@ export default function Landing() {
               <Shield className="text-white" size={18} />
             </div>
             <div>
-              <div className="font-display font-extrabold text-slate-900 leading-tight">Silent Guardian</div>
-              <div className="text-[10px] uppercase tracking-[0.2em] text-teal-700 -mt-0.5">Healthcare Safety Net</div>
+              <div className="font-display font-extrabold text-slate-900 leading-tight">Care Preempt</div>
+              <div className="text-[10px] uppercase tracking-[0.2em] text-teal-700 -mt-0.5">Predictive Healthcare Safety Net</div>
             </div>
           </div>
 
@@ -72,7 +72,7 @@ export default function Landing() {
                 Multilingual AI Triage · Family Guardian Net · 500+ Hospitals · Live EMS Fleet
               </div>
               <h1 className="font-display mt-5 text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.08]">
-                A quiet guardian for every <span className="text-teal-700">health decision</span>.
+                Proactive care that protects before <span className="text-teal-700">emergencies escalate</span>.
               </h1>
               <p className="mt-5 text-lg text-slate-600 max-w-2xl leading-relaxed">
                 Connect instantly to clinical AI triage, real-time emergency bed capacity, rapid blood donation alerts, and localized health awareness video guides in your mother tongue.
@@ -207,11 +207,11 @@ export default function Landing() {
       {/* Footer */}
       <footer className="border-t border-slate-200 bg-white py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
-          <div>© 2026 Silent Guardian · Healthcare Safety Net. All medical triage is guidance and not a diagnostic substitute.</div>
+          <div>© 2026 Care Preempt · Predictive Healthcare Safety Net. Continuous vitals monitoring and triage guidance.</div>
           <div className="flex gap-4">
-            <Link to="/patient" className="hover:text-slate-900">Patient</Link>
-            <Link to="/hospital" className="hover:text-slate-900">Hospital</Link>
-            <Link to="/admin" className="hover:text-slate-900">Admin</Link>
+            <Link to="/patient" className="hover:text-slate-900">User Safety</Link>
+            <Link to="/hospital" className="hover:text-slate-900">Hospital Command</Link>
+            <Link to="/admin" className="hover:text-slate-900">Security Admin</Link>
           </div>
         </div>
       </footer>

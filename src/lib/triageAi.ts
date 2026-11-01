@@ -1041,7 +1041,7 @@ Your description contains critical clinical signs requiring immediate in-person 
 
   let fallbackMessage = "";
   if (lang === 'te') {
-    fallbackMessage = `నమస్కారం! సైలెంట్ గార్డియన్ ఆరోగ్య సేవల సమాచారం:
+    fallbackMessage = `నమస్కారం! కేర్ ప్రీఎమ్ప్ట్ (Care Preempt) ఆరోగ్య సేవల సమాచారం:
 
 👨‍⚕️ మీరు సంప్రదించాల్సిన సరైన వైద్యులు (Which Doctor is Better to Consult):
 • జనరల్ ఫిజీషియన్ (General Physician / ప్రాథమిక సంరక్షణ వైద్యులు).
@@ -1053,7 +1053,7 @@ Your description contains critical clinical signs requiring immediate in-person 
 3. అజీర్ణం అయితే: వాము (vaamu) నమిలి గోరువెచ్చని నీళ్లు త్రాగడం.
 4. మందులు కొనడానికి: క్రింద ఉన్న ఆన్‌లైన్ ఫార్మసీల నుండి ఆర్డర్ చేయండి లేదా వైద్యుడితో మాట్లాడండి.`;
   } else if (lang === 'hi') {
-    fallbackMessage = `नमस्ते! साइलेंट गार्डियन स्वास्थ्य मंच पर आपका स्वागत है।
+    fallbackMessage = `नमस्ते! केयर प्रीएम्प्ट (Care Preempt) स्वास्थ्य मंच पर आपका स्वागत है।
 
 👨‍⚕️ आपको किस डॉक्टर से परामर्श करना चाहिए:
 • जनरल फिजिशियन (General Physician)।
@@ -1064,7 +1064,7 @@ Your description contains critical clinical signs requiring immediate in-person 
 3. अपच के लिए: अजवाइन और गुनगुना पानी।
 4. नीचे दिए गए ऑनलाइन विकल्पों से दवाएं मंगवाएं।`;
   } else {
-    fallbackMessage = `Hello! Welcome to Silent Guardian Health Assistant.
+    fallbackMessage = `Hello! Welcome to Care Preempt Health Assistant.
 
 👨‍⚕️ Which Doctor is Better to Consult:
 • General Physician / Primary Care Doctor for initial screening and evaluation.

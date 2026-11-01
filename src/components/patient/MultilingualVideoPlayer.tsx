@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   Play, Pause, RotateCcw, Volume2, VolumeX, Globe, AlertTriangle, Heart, Shield,
   CheckCircle2, Activity, FastForward, Eye, ShieldAlert, Flame, Droplets, Clock,
-  Sparkles, Award
+  Sparkles, Award, Hospital as HospitalIcon, Truck, Stethoscope, BedDouble, Siren, ArrowRight, Zap
 } from "lucide-react";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
+import { OnboardingVideoExplainer } from "./OnboardingVideoExplainer";
 
 export interface VideoGuideItem {
   id: string;
@@ -13,7 +14,7 @@ export interface VideoGuideItem {
   category: string;
   duration: number; // in seconds
   description: string;
-  iconType: 'cpr' | 'heimlich' | 'bleeding' | 'burns' | 'stroke' | 'seizure';
+  iconType: 'cpr' | 'heimlich' | 'bleeding' | 'burns' | 'stroke' | 'seizure' | 'hospital_intake' | 'ai_triage';
   languages: {
     code: string;
     label: string;
@@ -26,6 +27,199 @@ export interface VideoGuideItem {
 }
 
 export const FIRST_AID_VIDEO_GUIDES: VideoGuideItem[] = [
+  {
+    id: "ai-triage-explainer",
+    title: "AI Triage System: Symptom Intake, Guardian SMS & Bed Locking",
+    category: "AI Triage & Emergency Protocols",
+    duration: 75,
+    description: "Interactive visual breakdown with clickable annotations: Learn how Care Preempt continuously processes biometric telemetry, calculates ESI clinical risk scores, alerts registered family guardians, and pre-allocates ICU trauma beds.",
+    iconType: 'ai_triage',
+    languages: [
+      {
+        code: "en",
+        label: "English",
+        narrationText: [
+          "Step 1: Patient vital signs are continuously captured from smart wearables and multimodal voice or text descriptions.",
+          "Step 2: Care Preempt's AI neural engine evaluates clinical danger signals using the international Emergency Severity Index.",
+          "Step 3: An automated emergency SMS and live GPS map link are instantly dispatched to your family guardian.",
+          "Step 4: Nearby hospital trauma team reserves Bed #04 while 108 ALS ambulance speeds through green corridors."
+        ],
+        subtitles: [
+          { start: 0, end: 15, text: "Phase 1: Continuous biometric sensor intake and multimodal symptom speech recognition." },
+          { start: 15, end: 35, text: "Phase 2: AI Neural Emergency Severity Index (ESI) classification in under 300ms." },
+          { start: 35, end: 55, text: "Phase 3: Automated emergency SMS and real-time GPS beacon dispatch to family guardian." },
+          { start: 55, end: 75, text: "Phase 4: Pre-allocation of Hospital Trauma Bed #04 and 108 ALS ambulance green corridor dispatch." }
+        ],
+        steps: [
+          "1. Wearable Sensor Ingestion: Continuous 1Hz streaming of Pulse Rate, SpO2, and BP variance.",
+          "2. Neural NLP Triage: Clinical keyword and symptom evaluation against international ESI tiers.",
+          "3. Guardian SOS SMS: Automatic dispatch of emergency notification with live Google Maps beacon.",
+          "4. Hospital Bed Pre-Reservation: HL7/FHIR handshake locking designated ICU resuscitation bed.",
+          "5. 108 ALS Ambulance Dispatch: Green corridor navigation guided by GPS telemetry."
+        ],
+        dos: [
+          "Keep wearable smartwatch connected via Bluetooth for automatic background detection",
+          "Ensure emergency family guardian contact number is verified",
+          "Permit GPS location permissions for accurate ambulance dispatch"
+        ],
+        donts: [
+          "Do NOT delay seeking urgent medical care if severe chest pain or stroke symptoms are present",
+          "Do NOT turn off smartphone during active medical emergency alerts"
+        ]
+      },
+      {
+        code: "te",
+        label: "తెలుగు (Telugu)",
+        narrationText: [
+          "దశ 1: స్మార్ట్ వాచ్ మరియు మొబైల్ ద్వారా రోగి పల్స్, ఆక్సిజన్ మరియు లక్షణాల సమాచారం తక్షణమే సేకరించబడుతుంది.",
+          "దశ 2: కేర్ ప్రీఎమ్ప్ట్ AI వ్యవస్థ అత్యవసర వైద్య ప్రమాణాల ప్రకారం తీవ్రతను కేవలం 300 మిల్లీసెకన్లలో లెక్కిస్తుంది.",
+          "దశ 3: కుటుంబ సంరక్షకుడి ఫోన్‌కు లైవ్ జీపీఎస్ లొకేషన్ మరియు హెచ్చరిక ఎస్ఎంఎస్ ఆటోమేటిక్‌గా పంపబడుతుంది.",
+          "దశ 4: సమీప ఆసుపత్రిలో బెడ్ #04 రిజర్వ్ చేయబడుతుంది మరియు 108 అడ్వాన్స్‌డ్ అంబులెన్స్ బయలుదేరుతుంది."
+        ],
+        subtitles: [
+          { start: 0, end: 15, text: "దశ 1: నిరంతర బయోమెట్రిక్ సెన్సార్లు మరియు వాయిస్ లక్షణాల గుర్తింపు." },
+          { start: 15, end: 35, text: "దశ 2: 300 మిల్లీసెకన్లలో AI క్లినికల్ తీవ్రత వర్గీకరణ." },
+          { start: 35, end: 55, text: "దశ 3: కుటుంబ సంరక్షకుడికి ఆటోమేటిక్ అత్యవసర ఎస్ఎంఎస్ మరియు జీపీఎస్." },
+          { start: 55, end: 75, text: "దశ 4: ఆసుపత్రి ఐసీయూ బెడ్ రిజర్వేషన్ మరియు 108 అంబులెన్స్." }
+        ],
+        steps: [
+          "1. స్మార్ట్ వాచ్ డేటా సేకరణ",
+          "2. AI క్లినికల్ తీవ్రత నిర్ధారణ",
+          "3. సంరక్షకుడికి తక్షణ ఎస్ఎంఎస్ హెచ్చరిక",
+          "4. ఆసుపత్రి బెడ్ రిజర్వేషన్"
+        ],
+        dos: ["బ్లూటూత్ ఎల్లప్పుడూ ఆన్‌లో ఉంచండి", "సంరక్షకుడి ఫోన్ నంబర్ సరిచూడండి"],
+        donts: ["తీవ్రమైన గుండెనొప్పి ఉన్నప్పుడు నిర్లక్ష్యం చేయవద్దు"]
+      },
+      {
+        code: "hi",
+        label: "हिन्दी (Hindi)",
+        narrationText: [
+          "चरण 1: स्मार्ट वियरेबल्स और मरीज के लक्षणों का विवरण रीयल-टाइम में रिकॉर्ड किया जाता है।",
+          "चरण 2: केयर प्रीएम्प्ट का AI इंजन अंतरराष्ट्रीय आपातकालीन मानकों के अनुसार गंभीरता का आकलन करता है।",
+          "चरण 3: परिवार के अभिभावक को तुरंत लाइव जीपीएस लोकेशन और आपातकालीन एसएमएस भेजा जाता है।",
+          "चरण 4: निकटतम अस्पताल में आईसीयू बेड आरक्षित होता है और 108 एम्बुलेंस रवाना हो जाती है।"
+        ],
+        subtitles: [
+          { start: 0, end: 15, text: "चरण 1: लगातार बायोमेट्रिक सेंसर और लक्षणों की आवाज पहचान।" },
+          { start: 15, end: 35, text: "चरण 2: AI द्वारा आपातकालीन गंभीरता का त्वरित आकलन।" },
+          { start: 35, end: 55, text: "चरण 3: अभिभावक को लाइव जीपीएस के साथ आपातकालीन एसएमएस।" },
+          { start: 55, end: 75, text: "चरण 4: अस्पताल बेड आरक्षण और 108 एम्बुलेंस रवानगी।" }
+        ],
+        steps: [
+          "1. वियरेबल सेंसर सिंक",
+          "2. AI नैदानिक गंभीरता स्कोरिंग",
+          "3. अभिभावक को आपातकालीन एसएमएस",
+          "4. अस्पताल में बेड आरक्षण"
+        ],
+        dos: ["स्मार्टवॉच को कनेक्ट रखें", "अभिभावक का फोन नंबर सही रखें"],
+        donts: ["छाती में दर्द होने पर देरी न करें"]
+      }
+    ]
+  },
+  {
+    id: "hospital-patient-intake",
+    title: "Patient Taken by Hospital: Ambulance Handoff & Emergency Trauma Admission",
+    category: "Hospital Emergency & EMS Transfer",
+    duration: 100,
+    description: "Realistic clinical simulation of a patient being taken in by emergency hospital services: on-scene paramedic loading, rapid ambulance transport with continuous telemetry, ER trauma bay reception, SBAR physician handoff, and immediate ICU bed admission.",
+    iconType: 'hospital_intake',
+    languages: [
+      {
+        code: "en",
+        label: "English",
+        narrationText: [
+          "Paramedics arrive on-scene. Secure patient on spineboard, attach mobile pulse oximeter and oxygen mask.",
+          "Safely load motorized ambulance stretcher into vehicle. Establish wireless vital telemetry sync to destination hospital.",
+          "En route: Continuous ECG cardiac rhythm monitoring, start IV saline line, sound siren for emergency green corridor.",
+          "Arrival at hospital ER trauma bay: Paramedic hands off patient to attending ER physician using SBAR clinical protocol.",
+          "Transfer patient to Trauma Resuscitation Bed #04. Attending doctor initiates rapid ultrasound and blood draw.",
+          "Care Preempt network broadcasts admission confirmation, bed number, and treating doctor to registered family guardian."
+        ],
+        subtitles: [
+          { start: 0, end: 18, text: "Phase 1: On-scene paramedic stabilization, oxygenation, and motorized stretcher loading." },
+          { start: 18, end: 38, text: "Phase 2: High-speed ambulance transit with live wireless telemetry transmitting vitals to hospital ER." },
+          { start: 38, end: 60, text: "Phase 3: Arrival at hospital emergency trauma bay; stretcher wheeled through automated ER doors." },
+          { start: 60, end: 82, text: "Phase 4: SBAR clinical handoff from paramedic to ER Chief Physician; immediate triage score assigned." },
+          { start: 82, end: 100, text: "Phase 5: Patient transferred to Trauma ICU Bed #04; Care Preempt automatically confirms admission to guardian." }
+        ],
+        steps: [
+          "1. On-Scene Paramedic Immobilization: Secure neck/spine and apply mobile oxygen mask.",
+          "2. Telemetry Transmission: Sync real-time SpO2, heart rate, and BP to receiving trauma hospital.",
+          "3. Stretcher Offloading: Paramedics swiftly wheel patient into ER resuscitation bay.",
+          "4. SBAR Handoff: Situation, Background, Assessment, and Recommendation delivered to ER physician.",
+          "5. Immediate Bed Admission: Patient transferred to allocated trauma bed with multiparameter monitor.",
+          "6. Family Guardian Notification: Hospital admission status and bed number updated in Care Preempt."
+        ],
+        dos: [
+          "Keep ambulance corridor clear for rapid transit",
+          "Relay patient allergies and pre-existing conditions during SBAR handoff",
+          "Check bed availability and hospital emergency status in advance",
+          "Ensure family guardian is registered to receive automatic admission alerts"
+        ],
+        donts: [
+          "Do NOT remove cervical collar before hospital CT/X-ray clearance",
+          "Do NOT delay ambulance dispatch by attempting private vehicle transport for critical victims",
+          "Do NOT interrupt the paramedic-to-physician clinical handoff",
+          "Do NOT crowd the emergency resuscitation bay"
+        ]
+      },
+      {
+        code: "te",
+        label: "తెలుగు (Telugu)",
+        narrationText: [
+          "పారామెడిక్స్ సంఘటనా స్థలానికి చేరుకుంటారు. రోగిని సురక్షితంగా స్ట్రెచర్‌పై ఉంచి ఆక్సిజన్ మాస్క్ అమర్చుతారు.",
+          "అంబులెన్స్‌లోకి రోగిని ఎక్కించి, లైవ్ వైటల్స్ సమాచారాన్ని సమీప ఆసుపత్రి ఎమర్జెన్సీ విభాగానికి వైర్‌లెస్ ద్వారా పంపుతారు.",
+          "ఆసుపత్రికి వెళ్లే మార్గంలో: నిరంతర ఈసీజీ మానిటరింగ్, సెలైన్ ఐవీ లైన్ ఏర్పాటు, సైరన్ ద్వారా గ్రీన్ కారిడార్ క్లియరెన్స్.",
+          "ఆసుపత్రి ట్రామా బే చేరగానే: పారామెడిక్ రోగి పూర్తి ఆరోగ్య స్థితిని ఎమర్జెన్సీ చీఫ్ డాక్టర్‌కు క్లినికల్ ఎస్‌బార్ పద్ధతిలో వివరిస్తారు.",
+          "రోగిని తక్షణమే కేటాయించిన ఎమర్జెన్సీ బెడ్‌పైకి మారుస్తారు. వైద్యులు తక్షణ పరీక్షలు మరియు రక్త పరీక్షలు ప్రారంభిస్తారు.",
+          "కేర్ ప్రీఎమ్ప్ట్ నెట్‌వర్క్ ద్వారా కుటుంబ సంరక్షకులకు ఆసుపత్రి అడ్మిషన్, బెడ్ నంబర్ మరియు వైద్యుల వివరాల అలర్ట్ అందుతుంది."
+        ],
+        subtitles: [
+          { start: 0, end: 18, text: "దశ 1: సంఘటనా స్థలంలో పారామెడిక్ ప్రథమ చికిత్స, ఆక్సిజన్ మరియు స్ట్రెచర్ అమరిక." },
+          { start: 18, end: 38, text: "దశ 2: హైస్పీడ్ అంబులెన్స్ ప్రయాణం; రోగి బీపీ, పల్స్ వివరాలు ఆసుపత్రికి లైవ్ ట్రాన్స్‌మిషన్." },
+          { start: 38, end: 60, text: "దశ 3: ఆసుపత్రి ఎమర్జెన్సీ ట్రామా సెంటర్‌కు చేరుకోవడం; స్ట్రెచర్‌ను లోపలికి తరలించడం." },
+          { start: 60, end: 82, text: "దశ 4: పారామెడిక్ నుండి ఎమర్జెన్సీ వైద్యుడికి పూర్తి క్లినికల్ హ్యాండోవర్ (SBAR పద్ధతి)." },
+          { start: 82, end: 100, text: "దశ 5: ట్రామా బెడ్‌పై అడ్మిషన్ మరియు కుటుంబ సభ్యులకు తక్షణ ఆటోమేటిక్ సమాచారం." }
+        ],
+        steps: [
+          "1. పారామెడిక్ చికిత్స మరియు ఆక్సిజన్ అందించడం.",
+          "2. ఆసుపత్రికి లైవ్ వైటల్స్ డేటా చేరవేయడం.",
+          "3. ఎమర్జెన్సీ వార్డుకు త్వరితగతిన చేర్చడం.",
+          "4. వైద్యులకు పూర్తి వివరాలు అందించడం (SBAR).",
+          "5. కేటాయించిన బెడ్‌పై చికిత్స ప్రారంభం.",
+          "6. కుటుంబ సంరక్షకులకు అడ్మిషన్ వివరాలు చేరడం."
+        ],
+        dos: ["అంబులెన్స్ మార్గంలో ట్రాఫిక్ లేకుండా చూడండి", "మందుల అలర్జీల వివరాలు వైద్యుడికి చెప్పండి"],
+        donts: ["తీవ్రమైన స్థితిలో సొంత వాహనంలో తీసుకెళ్లవద్దు", "వైద్యుల హ్యాండోవర్‌లో అడ్డుపడవద్దు"]
+      },
+      {
+        code: "hi",
+        label: "हिन्दी (Hindi)",
+        narrationText: [
+          "पैरामेडिक्स मौके पर पहुंचकर मरीज को स्ट्रेचर पर सुरक्षित करते हैं और ऑक्सीजन मास्क लगाते हैं।",
+          "मरीज को एम्बुलेंस में लोड करके वाइटल्स डेटा गंतव्य अस्पताल के इमरजेंसी रूम को वायरलेस तरीके से भेजते हैं।",
+          "अस्पताल के ट्रॉमा बे पहुंचने पर पैरामेडिक ड्यूटी डॉक्टर को मरीज की स्थिति (SBAR) सौंपते हैं।",
+          "मरीज को तुरंत ट्रॉमा बेड पर शिफ्ट किया जाता है और आपातकालीन उपचार शुरू होता है।",
+          "केयर प्रीएम्प्ट के माध्यम से अभिभावक को अस्पताल प्रवेश और बेड नंबर का संदेश भेजा जाता है।"
+        ],
+        subtitles: [
+          { start: 0, end: 20, text: "चरण 1: मौके पर पैरामेडिक द्वारा स्थिरता, ऑक्सीजन और स्ट्रेचर लोडिंग।" },
+          { start: 20, end: 40, text: "चरण 2: एम्बुलेंस द्वारा अस्पताल को लाइव वाइटल्स टेलीमेट्री ट्रांसमिशन।" },
+          { start: 40, end: 70, text: "चरण 3: अस्पताल आगमन और ड्यूटी डॉक्टर को क्लिनिकल हैंडऑफ।" },
+          { start: 70, end: 100, text: "चरण 4: ट्रॉमा बेड पर मरीज का दाखिला और अभिभावक को अलर्ट।" }
+        ],
+        steps: [
+          "1. मरीज को स्ट्रेचर पर सुरक्षित करना।",
+          "2. अस्पताल को लाइव डेटा भेजना।",
+          "3. आपातकालीन विभाग में तुरंत दाखिल कराना।",
+          "4. डॉक्टर को मरीज की मेडिकल हिस्ट्री देना।"
+        ],
+        dos: ["मरीज की दवाओं की एलर्जी बताएं", "108 एम्बुलेंस का उपयोग करें"],
+        donts: ["गंभीर मरीज को निजी कार में न ले जाएं", "इमरजेंसी में बाधा न डालें"]
+      }
+    ]
+  },
   {
     id: "cpr-man-simulator",
     title: "Manual CPR Action Simulator: Rescuer Compressing Patient Chest",
@@ -596,6 +790,7 @@ export function MultilingualVideoPlayer() {
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1);
   const [cameraView, setCameraView] = useState<'lateral_action' | 'sternum_closeup' | 'top_down'>('lateral_action');
   const [manualCprStep, setManualCprStep] = useState<'auto' | 'check' | 'call108' | 'airway' | 'handlock' | 'compress' | 'breaths'>('auto');
+  const [manualHospitalStep, setManualHospitalStep] = useState<'auto' | 'loading' | 'transit' | 'arrival' | 'handoff' | 'bed'>('auto');
   
   // Real-time CPR dynamic motion states
   const [compressionCount, setCompressionCount] = useState<number>(0);
@@ -623,6 +818,31 @@ export function MultilingualVideoPlayer() {
       ? 'breaths'
       : 'compress'
   );
+
+  // Resolve current active Hospital patient intake action
+  const activeHospitalAction: 'loading' | 'transit' | 'arrival' | 'handoff' | 'bed' = (
+    manualHospitalStep !== 'auto'
+      ? manualHospitalStep
+      : currentTime < 18
+      ? 'loading'
+      : currentTime < 38
+      ? 'transit'
+      : currentTime < 60
+      ? 'arrival'
+      : currentTime < 82
+      ? 'handoff'
+      : 'bed'
+  );
+
+  const jumpToHospitalStep = (step: 'auto' | 'loading' | 'transit' | 'arrival' | 'handoff' | 'bed') => {
+    setManualHospitalStep(step);
+    if (step === 'loading') setCurrentTime(2);
+    else if (step === 'transit') setCurrentTime(20);
+    else if (step === 'arrival') setCurrentTime(42);
+    else if (step === 'handoff') setCurrentTime(65);
+    else if (step === 'bed') setCurrentTime(85);
+    setIsPlaying(true);
+  };
 
   const jumpToCprStep = (step: 'auto' | 'check' | 'call108' | 'airway' | 'handlock' | 'compress' | 'breaths') => {
     setManualCprStep(step);
@@ -749,6 +969,7 @@ export function MultilingualVideoPlayer() {
     setCurrentTime(0);
     setCompressionCount(0);
     setCyclePhase('compression');
+    setManualHospitalStep('auto');
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
@@ -817,6 +1038,8 @@ export function MultilingualVideoPlayer() {
                     : "bg-slate-900 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800"
                 }`}
               >
+                {v.iconType === 'ai_triage' && <Zap size={14} className="text-amber-400" />}
+                {v.iconType === 'hospital_intake' && <HospitalIcon size={14} className="text-cyan-400" />}
                 {v.iconType === 'cpr' && <Heart size={14} className="text-red-400" />}
                 {v.iconType === 'heimlich' && <Shield size={14} className="text-emerald-400" />}
                 {v.iconType === 'bleeding' && <Droplets size={14} className="text-rose-400" />}
@@ -920,7 +1143,14 @@ export function MultilingualVideoPlayer() {
         {/* CENTER STAGE: Dynamic Realistic Animated Simulation Canvas */}
         <div className="relative z-10 flex-1 flex items-center justify-center p-4">
           
-          {selectedVideoId === 'cpr-man-simulator' ? (
+          {selectedVideoId === 'ai-triage-explainer' ? (
+            /* =========================================================================
+               AI CLINICAL TRIAGE EXPLAINER: INTERACTIVE ANNOTATIONS & STEP-BY-STEP BREAKDOWNS
+               ========================================================================= */
+            <div className="w-full max-w-5xl py-2">
+              <OnboardingVideoExplainer embedded={true} />
+            </div>
+          ) : selectedVideoId === 'cpr-man-simulator' ? (
             /* =========================================================================
                REALISTIC CPR ACTION SIMULATOR: MAN PERFORMING MANUAL CPR ON PATIENT
                ========================================================================= */
@@ -1047,7 +1277,7 @@ export function MultilingualVideoPlayer() {
 
                 {/* SVG Visual Demonstration based on active camera view */}
                 {cameraView === 'lateral_action' ? (
-                  /* VIEW 1: LATERAL PERSPECTIVE - MAN KNEELING BESIDE PATIENT ON FLOOR */
+                  /* VIEW 1: LATERAL PERSPECTIVE - ANIME RESCUER PERFORMING MANUAL CPR ON PATIENT */
                   <div className="relative w-full h-80 flex items-center justify-center">
                     <svg viewBox="0 20 600 245" className="w-full h-full drop-shadow-2xl">
                       <defs>
@@ -1059,42 +1289,67 @@ export function MultilingualVideoPlayer() {
                           <stop offset="0%" stopColor="#38bdf8" />
                           <stop offset="100%" stopColor="#0284c7" />
                         </linearGradient>
-                        <linearGradient id="rescuerShirt" x1="0" y1="0" x2="1" y2="1">
+                        <linearGradient id="animeRescuerJacket" x1="0" y1="0" x2="1" y2="1">
                           <stop offset="0%" stopColor="#0d9488" />
+                          <stop offset="50%" stopColor="#14b8a6" />
                           <stop offset="100%" stopColor="#0f766e" />
+                        </linearGradient>
+                        <linearGradient id="animeHairGrad" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="#1e1b4b" />
+                          <stop offset="60%" stopColor="#312e81" />
+                          <stop offset="100%" stopColor="#0f172a" />
+                        </linearGradient>
+                        <linearGradient id="animeSkinGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#ffedd5" />
+                          <stop offset="100%" stopColor="#fed7aa" />
                         </linearGradient>
                         <filter id="glowAirway" x="-20%" y="-20%" width="140%" height="140%">
                           <feGaussianBlur stdDeviation="3" result="blur" />
                           <feComposite in="SourceGraphic" in2="blur" operator="over" />
                         </filter>
+                        <filter id="animeNeonGlow" x="-30%" y="-30%" width="160%" height="160%">
+                          <feGaussianBlur stdDeviation="4" result="blur" />
+                          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
                       </defs>
 
-                      {/* Training Floor Mat */}
+                      {/* Training Floor Mat with Cyber Tactical Grid */}
                       <rect x="40" y="210" width="520" height="40" rx="8" fill="url(#floorGrad)" stroke="#334155" strokeWidth="2" />
                       <line x1="60" y1="210" x2="540" y2="210" stroke="#0d9488" strokeWidth="2" strokeDasharray="6 4" opacity="0.6" />
 
-                      {/* ---------------- COLLAPSED PATIENT LYING ON BACK ---------------- */}
-                      {/* Patient Pillow/Support */}
-                      <rect x="70" y="195" width="40" height="15" rx="4" fill="#475569" />
+                      {/* Anime Dynamic Action Speed Lines during Compression Thrust */}
+                      {activeCprAction === 'compress' && isPumping && (
+                        <g opacity="0.45" stroke="#facc15" strokeWidth="1.5">
+                          <line x1="180" y1="185" x2="110" y2="120" strokeDasharray="15 8" />
+                          <line x1="180" y1="185" x2="140" y2="70" strokeDasharray="20 10" />
+                          <line x1="180" y1="185" x2="220" y2="70" strokeDasharray="20 10" />
+                          <line x1="180" y1="185" x2="250" y2="120" strokeDasharray="15 8" />
+                          <line x1="180" y1="185" x2="270" y2="170" strokeDasharray="12 6" />
+                        </g>
+                      )}
+
+                      {/* ---------------- COLLAPSED ANIME CITIZEN LYING ON BACK ---------------- */}
+                      {/* Anime Citizen Pillow/Support */}
+                      <rect x="70" y="195" width="40" height="15" rx="4" fill="#334155" stroke="#475569" strokeWidth="1" />
+                      
                       {/* Patient Head */}
                       <ellipse
                         cx="90"
                         cy={activeCprAction === 'airway' || activeCprAction === 'breaths' ? 175 : 180}
                         rx="20"
                         ry="16"
-                        fill="#fde2e4"
-                        stroke="#e2e8f0"
+                        fill="url(#animeSkinGrad)"
+                        stroke="#fdba74"
                         strokeWidth="1.5"
                       />
-                      {/* Patient Face profile */}
+                      {/* Soft Anime Hair for Patient */}
                       <path
-                        d={
-                          activeCprAction === 'airway' || activeCprAction === 'breaths'
-                            ? "M 82 165 Q 96 158 108 168 Q 106 178 94 185" // Tilted back head
-                            : "M 85 170 Q 95 165 105 174 Q 102 182 92 188"
-                        }
-                        fill="#fde2e4"
+                        d="M 70 178 Q 78 162 95 162 Q 110 162 112 174 Q 102 168 90 168 Q 76 172 70 178 Z"
+                        fill="#334155"
                       />
+                      {/* Peaceful Closed Anime Eyes */}
+                      <path d="M 85 174 Q 90 177 95 174" stroke="#475569" strokeWidth="1.8" fill="none" strokeLinecap="round" />
+                      <circle cx="98" cy="177" r="1.5" fill="#f43f5e" opacity="0.4" />
 
                       {/* Patient Torso / Chest with dynamic compression depression or rescue breath expansion */}
                       <path
@@ -1112,14 +1367,15 @@ export function MultilingualVideoPlayer() {
                       />
                       {/* Patient Legs extending flat */}
                       <path d="M 340 192 L 480 200 L 480 215 L 350 215 Z" fill="#1e3a8a" stroke="#3b82f6" strokeWidth="1.5" />
-                      {/* Patient Feet */}
-                      <ellipse cx="485" cy="202" rx="8" ry="12" fill="#0f172a" />
+                      {/* Patient Anime Shoes */}
+                      <ellipse cx="485" cy="202" rx="8" ry="12" fill="#0f172a" stroke="#334155" strokeWidth="1.5" />
 
                       {/* Internal Anatomical Heart and Arterial Blood Flow Pulse to Brain */}
                       {activeCprAction === 'compress' && (
                         <g>
-                          {/* Heart on Sternum */}
+                          {/* Heart on Sternum with Neon Pulse Ring */}
                           <circle cx="180" cy={isPumping ? 197 : 180} r={isPumping ? 9 : 12} fill="#dc2626" stroke="#fca5a5" strokeWidth="1.5" />
+                          <circle cx="180" cy={isPumping ? 197 : 180} r={isPumping ? 16 : 14} fill="none" stroke="#f87171" strokeWidth="1" opacity={isPumping ? 0.8 : 0.3} className="animate-ping" />
                           {/* Arterial Blood Stream Pulsing to Head/Brain */}
                           {isPumping && (
                             <path
@@ -1141,24 +1397,31 @@ export function MultilingualVideoPlayer() {
                         <g>
                           {/* Rescuer Kneeling & Tapping Both Shoulders */}
                           <path d="M 210 230 Q 240 235 250 215 L 230 195 L 200 215 Z" fill="#1e293b" stroke="#475569" strokeWidth="2" />
-                          <path d="M 155 105 L 210 95 L 215 155 L 165 160 Z" fill="url(#rescuerShirt)" stroke="#14b8a6" strokeWidth="2" />
-                          <ellipse cx="178" cy="72" rx="16" ry="18" fill="#fbcfe8" stroke="#cbd5e1" strokeWidth="1.5" />
-                          {/* Ear near patient's mouth */}
-                          <line x1="172" y1="74" x2="176" y2="76" stroke="#1e293b" strokeWidth="2" />
+                          <path d="M 155 105 L 210 95 L 215 155 L 165 160 Z" fill="url(#animeRescuerJacket)" stroke="#14b8a6" strokeWidth="2" />
                           
-                          {/* Two Arms reaching out to patient's collarbones/shoulders */}
-                          <line x1="160" y1="110" x2="125" y2="182" stroke="#fbcfe8" strokeWidth="10" strokeLinecap="round" />
-                          <line x1="185" y1="110" x2="145" y2="182" stroke="#fbcfe8" strokeWidth="10" strokeLinecap="round" />
+                          {/* Anime Rescuer Head & Face */}
+                          <ellipse cx="178" cy="72" rx="16" ry="18" fill="url(#animeSkinGrad)" stroke="#fdba74" strokeWidth="1.5" />
+                          {/* Anime Spiky Hair with Highlight */}
+                          <path d="M 160 70 Q 155 50 174 44 Q 186 38 196 48 Q 200 62 195 72 Q 188 56 176 56 Q 166 60 160 70 Z" fill="url(#animeHairGrad)" />
+                          <polygon points="174,44 182,52 188,40 194,54" fill="#38bdf8" opacity="0.7" />
+                          {/* Expressive Anime Eye */}
+                          <ellipse cx="174" cy="73" rx="3.5" ry="5" fill="#0f172a" />
+                          <circle cx="173" cy="71" r="1.3" fill="#ffffff" />
+
+                          {/* Two Arms reaching out to patient's collarbones */}
+                          <line x1="160" y1="110" x2="125" y2="182" stroke="#fed7aa" strokeWidth="10" strokeLinecap="round" />
+                          <line x1="185" y1="110" x2="145" y2="182" stroke="#fed7aa" strokeWidth="10" strokeLinecap="round" />
                           
                           {/* Hands firmly tapping patient shoulders with yellow impact rings */}
                           <circle cx="125" cy="182" r="12" fill="none" stroke="#facc15" strokeWidth="2.5" className="animate-ping" />
                           <circle cx="145" cy="182" r="12" fill="none" stroke="#facc15" strokeWidth="2.5" className="animate-ping" />
                           
-                          {/* Speech Prompt Bubble */}
-                          <rect x="180" y="30" width="180" height="34" rx="8" fill="#0f172a" stroke="#38bdf8" strokeWidth="1.5" />
-                          <polygon points="180,50 170,55 180,60" fill="#0f172a" />
-                          <text x="190" y="46" fill="#38bdf8" fontSize="10" fontWeight="bold">"CAN YOU HEAR ME?"</text>
-                          <text x="190" y="58" fill="#94a3b8" fontSize="9">Tap collarbone firmly & shout</text>
+                          {/* Manga Action Badge */}
+                          <g transform="translate(230, 40)">
+                            <rect x="0" y="0" width="160" height="42" rx="8" fill="#0f172a" stroke="#38bdf8" strokeWidth="2" />
+                            <text x="10" y="18" fill="#38bdf8" fontSize="10" fontWeight="extrabold">ハッ! [ CHECK STATUS ]</text>
+                            <text x="10" y="32" fill="#ffffff" fontSize="9">"Can you hear me? Tap shoulders"</text>
+                          </g>
                         </g>
                       )}
 
@@ -1167,22 +1430,24 @@ export function MultilingualVideoPlayer() {
                         <g>
                           {/* Rescuer Pointing Urgently */}
                           <path d="M 210 230 Q 240 235 250 215 L 230 195 L 200 215 Z" fill="#1e293b" stroke="#475569" strokeWidth="2" />
-                          <path d="M 155 105 L 210 95 L 215 155 L 165 160 Z" fill="url(#rescuerShirt)" stroke="#14b8a6" strokeWidth="2" />
-                          <ellipse cx="178" cy="72" rx="16" ry="18" fill="#fbcfe8" stroke="#cbd5e1" strokeWidth="1.5" />
+                          <path d="M 155 105 L 210 95 L 215 155 L 165 160 Z" fill="url(#animeRescuerJacket)" stroke="#14b8a6" strokeWidth="2" />
+                          <ellipse cx="178" cy="72" rx="16" ry="18" fill="url(#animeSkinGrad)" stroke="#fdba74" strokeWidth="1.5" />
+                          <path d="M 160 70 Q 155 50 174 44 Q 186 38 196 48 Q 200 62 195 72 Q 188 56 176 56 Q 166 60 160 70 Z" fill="url(#animeHairGrad)" />
+                          
                           {/* Left arm resting on patient */}
-                          <line x1="165" y1="110" x2="178" y2="182" stroke="#fbcfe8" strokeWidth="10" strokeLinecap="round" />
+                          <line x1="165" y1="110" x2="178" y2="182" stroke="#fed7aa" strokeWidth="10" strokeLinecap="round" />
                           {/* Right arm extended pointing to side */}
-                          <line x1="190" y1="110" x2="250" y2="105" stroke="#fbcfe8" strokeWidth="10" strokeLinecap="round" />
-                          <ellipse cx="254" cy="104" rx="6" ry="5" fill="#fbcfe8" />
+                          <line x1="190" y1="110" x2="250" y2="105" stroke="#fed7aa" strokeWidth="10" strokeLinecap="round" />
+                          <ellipse cx="254" cy="104" rx="6" ry="5" fill="#fed7aa" />
 
-                          {/* Glowing 108 Emergency Callout Box */}
-                          <g transform="translate(260, 60)">
-                            <rect x="0" y="0" width="170" height="65" rx="12" fill="#450a0a" stroke="#ef4444" strokeWidth="2" className="animate-pulse" />
-                            <circle cx="22" cy="32" r="14" fill="#dc2626" />
-                            <text x="22" y="37" fill="#ffffff" fontSize="14" textAnchor="middle" fontWeight="bold">☎</text>
-                            <text x="44" y="26" fill="#f87171" fontSize="12" fontWeight="extrabold" fontFamily="monospace">CALL 108 EMT</text>
+                          {/* Glowing Anime 108 Emergency Callout Box */}
+                          <g transform="translate(260, 55)">
+                            <rect x="0" y="0" width="175" height="68" rx="12" fill="#450a0a" stroke="#ef4444" strokeWidth="2" className="animate-pulse" />
+                            <circle cx="22" cy="34" r="14" fill="#dc2626" />
+                            <text x="22" y="39" fill="#ffffff" fontSize="14" textAnchor="middle" fontWeight="bold">☎</text>
+                            <text x="44" y="24" fill="#f87171" fontSize="11" fontWeight="extrabold" fontFamily="monospace">紧急! CALL 108 EMT</text>
                             <text x="44" y="42" fill="#ffffff" fontSize="9" fontWeight="bold">"Direct bystander to call"</text>
-                            <text x="44" y="54" fill="#fca5a5" fontSize="8">"Bring AED Defibrillator immediately"</text>
+                            <text x="44" y="56" fill="#fca5a5" fontSize="8.5">"Bring AED Defibrillator NOW"</text>
                           </g>
                         </g>
                       )}
@@ -1192,14 +1457,15 @@ export function MultilingualVideoPlayer() {
                         <g>
                           {/* Rescuer Leaning Over Head */}
                           <path d="M 190 230 Q 220 235 230 215 L 210 195 L 180 215 Z" fill="#1e293b" stroke="#475569" strokeWidth="2" />
-                          <path d="M 135 110 L 190 100 L 195 160 L 145 165 Z" fill="url(#rescuerShirt)" stroke="#14b8a6" strokeWidth="2" />
-                          <ellipse cx="148" cy="76" rx="16" ry="18" fill="#fbcfe8" stroke="#cbd5e1" strokeWidth="1.5" />
+                          <path d="M 135 110 L 190 100 L 195 160 L 145 165 Z" fill="url(#animeRescuerJacket)" stroke="#14b8a6" strokeWidth="2" />
+                          <ellipse cx="148" cy="76" rx="16" ry="18" fill="url(#animeSkinGrad)" stroke="#fdba74" strokeWidth="1.5" />
+                          <path d="M 130 74 Q 125 54 144 48 Q 156 42 166 52 Q 170 66 165 76 Z" fill="url(#animeHairGrad)" />
                           
                           {/* Hand 1: Pressing down on Forehead */}
-                          <line x1="140" y1="110" x2="88" y2="168" stroke="#fbcfe8" strokeWidth="8" strokeLinecap="round" />
+                          <line x1="140" y1="110" x2="88" y2="168" stroke="#fed7aa" strokeWidth="8" strokeLinecap="round" />
                           <ellipse cx="86" cy="168" rx="7" ry="5" fill="#f43f5e" />
                           {/* Hand 2: Fingertips lifting lower Chin */}
-                          <line x1="150" y1="115" x2="108" y2="175" stroke="#fbcfe8" strokeWidth="8" strokeLinecap="round" />
+                          <line x1="150" y1="115" x2="108" y2="175" stroke="#fed7aa" strokeWidth="8" strokeLinecap="round" />
                           <ellipse cx="108" cy="175" rx="6" ry="5" fill="#f43f5e" />
 
                           {/* Luminous Glowing Open Airway Tube */}
@@ -1212,10 +1478,10 @@ export function MultilingualVideoPlayer() {
                             filter="url(#glowAirway)"
                           />
 
-                          {/* Airway Annotation Banner */}
+                          {/* Manga Action Airway Banner */}
                           <g transform="translate(160, 45)">
                             <rect x="0" y="0" width="190" height="42" rx="8" fill="#0f172a" stroke="#22d3ee" strokeWidth="1.5" />
-                            <text x="10" y="18" fill="#22d3ee" fontSize="10" fontWeight="bold">✔ AIRWAY WIDE OPEN</text>
+                            <text x="10" y="18" fill="#22d3ee" fontSize="10" fontWeight="bold">フゥゥ! [ AIRWAY UNLOCKED ]</text>
                             <text x="10" y="32" fill="#cbd5e1" fontSize="8.5">Tongue lifted off back of throat</text>
                           </g>
                         </g>
@@ -1229,31 +1495,30 @@ export function MultilingualVideoPlayer() {
                           <ellipse cx="205" cy="220" rx="14" ry="10" fill="#334155" />
                           
                           {/* Upper Body Vertically Centered Right Over Sternum */}
-                          <path d="M 155 100 L 210 90 L 215 150 L 165 155 Z" fill="url(#rescuerShirt)" stroke="#14b8a6" strokeWidth="2" />
-                          <ellipse cx="178" cy="68" rx="16" ry="18" fill="#fbcfe8" stroke="#cbd5e1" strokeWidth="1.5" />
+                          <path d="M 155 100 L 210 90 L 215 150 L 165 155 Z" fill="url(#animeRescuerJacket)" stroke="#14b8a6" strokeWidth="2" />
+                          <ellipse cx="178" cy="68" rx="16" ry="18" fill="url(#animeSkinGrad)" stroke="#fdba74" strokeWidth="1.5" />
+                          <path d="M 160 66 Q 155 46 174 40 Q 186 34 196 44 Q 200 58 195 68 Z" fill="url(#animeHairGrad)" />
 
                           {/* 90 DEGREE VERTICAL ALIGNMENT GUIDE */}
                           <line x1="178" y1="90" x2="178" y2="182" stroke="#22c55e" strokeWidth="3" strokeDasharray="4 2" />
-                          {/* 90-degree square symbol */}
                           <path d="M 178 165 L 190 165 L 190 178" fill="none" stroke="#22c55e" strokeWidth="2" />
                           
                           {/* Locked Arms */}
-                          <line x1="168" y1="105" x2="178" y2="182" stroke="#fbcfe8" strokeWidth="12" strokeLinecap="round" />
-                          <line x1="188" y1="105" x2="180" y2="182" stroke="#fbcfe8" strokeWidth="12" strokeLinecap="round" />
-                          {/* Interlocked Hands on Sternum */}
+                          <line x1="168" y1="105" x2="178" y2="182" stroke="#fed7aa" strokeWidth="12" strokeLinecap="round" />
+                          <line x1="188" y1="105" x2="180" y2="182" stroke="#fed7aa" strokeWidth="12" strokeLinecap="round" />
                           <ellipse cx="180" cy="184" rx="14" ry="8" fill="#f43f5e" stroke="#ffffff" strokeWidth="2" />
 
-                          {/* 90 Degree Angle Badge */}
-                          <g transform="translate(230, 80)">
-                            <rect x="0" y="0" width="170" height="50" rx="10" fill="#052e16" stroke="#22c55e" strokeWidth="2" />
-                            <text x="12" y="20" fill="#4ade80" fontSize="11" fontWeight="extrabold">✔ 90° LOCKED ARMS</text>
-                            <text x="12" y="34" fill="#ffffff" fontSize="9" fontWeight="bold">DO NOT BEND ELBOWS</text>
+                          {/* Manga Action Badge: ガシッ [ LOCK ] */}
+                          <g transform="translate(230, 75)">
+                            <rect x="0" y="0" width="180" height="52" rx="10" fill="#052e16" stroke="#22c55e" strokeWidth="2" />
+                            <text x="12" y="18" fill="#4ade80" fontSize="11" fontWeight="extrabold">ガシッ! [ 90° ARM LOCK ]</text>
+                            <text x="12" y="32" fill="#ffffff" fontSize="9" fontWeight="bold">DO NOT BEND ELBOWS</text>
                             <text x="12" y="44" fill="#86efac" fontSize="8">Use upper body weight to push</text>
                           </g>
                         </g>
                       )}
 
-                      {/* ACTION 5 SCENE: 30 DEEP COMPRESSIONS (110 BPM DYNAMIC PUMP) */}
+                      {/* ACTION 5 SCENE: 30 DEEP COMPRESSIONS (110 BPM DYNAMIC PUMP WITH MANGA STAMPS) */}
                       {activeCprAction === 'compress' && (
                         <g>
                           {/* Rescuer Kneeling Lower Body */}
@@ -1265,14 +1530,17 @@ export function MultilingualVideoPlayer() {
                             transform={isPumping ? "translate(0, 16)" : "translate(0, 0)"}
                             className="transition-transform duration-150 ease-in-out"
                           >
-                            <path d="M 155 105 L 210 95 L 215 155 L 165 160 Z" fill="url(#rescuerShirt)" stroke="#14b8a6" strokeWidth="2" />
-                            <ellipse cx="178" cy="72" rx="16" ry="18" fill="#fbcfe8" stroke="#cbd5e1" strokeWidth="1.5" />
-                            <path d="M 162 68 Q 178 50 194 65 Q 185 58 165 60 Z" fill="#0f172a" />
-                            <line x1="172" y1="74" x2="176" y2="76" stroke="#1e293b" strokeWidth="2" />
+                            <path d="M 155 105 L 210 95 L 215 155 L 165 160 Z" fill="url(#animeRescuerJacket)" stroke="#14b8a6" strokeWidth="2" />
+                            <ellipse cx="178" cy="72" rx="16" ry="18" fill="url(#animeSkinGrad)" stroke="#fdba74" strokeWidth="1.5" />
+                            <path d="M 160 70 Q 155 50 174 44 Q 186 38 196 48 Q 200 62 195 72 Q 188 56 176 56 Q 166 60 160 70 Z" fill="url(#animeHairGrad)" />
+                            
+                            {/* Anime Rescuer Determined Eye */}
+                            <ellipse cx="174" cy="73" rx="3.5" ry="4.5" fill="#0f172a" />
+                            <circle cx="173" cy="72" r="1.2" fill="#ffffff" />
 
                             {/* Rigid locked arms */}
-                            <line x1="165" y1="110" x2="178" y2="182" stroke="#fbcfe8" strokeWidth="12" strokeLinecap="round" />
-                            <line x1="180" y1="108" x2="182" y2="182" stroke="#fbcfe8" strokeWidth="12" strokeLinecap="round" />
+                            <line x1="165" y1="110" x2="178" y2="182" stroke="#fed7aa" strokeWidth="12" strokeLinecap="round" />
+                            <line x1="180" y1="108" x2="182" y2="182" stroke="#fed7aa" strokeWidth="12" strokeLinecap="round" />
                             <ellipse cx="180" cy="184" rx="13" ry="8" fill="#f43f5e" stroke="#ffffff" strokeWidth="2" />
 
                             {/* Downward Force Vector Arrow */}
@@ -1295,6 +1563,17 @@ export function MultilingualVideoPlayer() {
                             </text>
                             <line x1="-5" y1="45" x2="5" y2="45" stroke="#64748b" strokeWidth="1.5" />
                           </g>
+
+                          {/* Japanese Manga Action Stamp: ズバッ! [ PUSH 5.4cm ] & ドンッ! [ DOKI DOKI ] */}
+                          <g transform={isPumping ? "translate(240, 75)" : "translate(240, 85)"} className="transition-all duration-150">
+                            <rect x="0" y="0" width="175" height="48" rx="10" fill="#881337" stroke="#f43f5e" strokeWidth="2" />
+                            <text x="10" y="18" fill="#fda4af" fontSize="11" fontWeight="extrabold">
+                              {isPumping ? "ズバッ! [ 5.4cm THRUST ]" : "ドンッ! [ DOKI DOKI 110BPM ]"}
+                            </text>
+                            <text x="10" y="32" fill="#ffffff" fontSize="9" fontWeight="bold">
+                              {isPumping ? "Depth Reached · Allow Recoil" : "Rhythm: 100-120 Compressions/min"}
+                            </text>
+                          </g>
                         </g>
                       )}
 
@@ -1303,11 +1582,11 @@ export function MultilingualVideoPlayer() {
                         <g>
                           {/* Rescuer Head Down Beside Patient Mouth Delivering Breath */}
                           <path d="M 180 230 Q 210 235 220 215 L 200 195 L 170 215 Z" fill="#1e293b" stroke="#475569" strokeWidth="2" />
-                          <path d="M 125 125 L 180 115 L 185 175 L 135 180 Z" fill="url(#rescuerShirt)" stroke="#14b8a6" strokeWidth="2" />
-                          {/* Rescuer Head sealing mouth */}
-                          <ellipse cx="112" cy="155" rx="15" ry="17" fill="#fbcfe8" stroke="#cbd5e1" strokeWidth="1.5" />
+                          <path d="M 125 125 L 180 115 L 185 175 L 135 180 Z" fill="url(#animeRescuerJacket)" stroke="#14b8a6" strokeWidth="2" />
+                          <ellipse cx="112" cy="155" rx="15" ry="17" fill="url(#animeSkinGrad)" stroke="#fdba74" strokeWidth="1.5" />
+                          
                           {/* Fingers Pinching Patient Nostrils */}
-                          <line x1="120" y1="135" x2="100" y2="162" stroke="#fbcfe8" strokeWidth="7" strokeLinecap="round" />
+                          <line x1="120" y1="135" x2="100" y2="162" stroke="#fed7aa" strokeWidth="7" strokeLinecap="round" />
                           <circle cx="98" cy="164" r="5" fill="#f43f5e" />
 
                           {/* Visual Oxygen Airflow into Chest */}
@@ -1316,11 +1595,11 @@ export function MultilingualVideoPlayer() {
                             <polygon points="175,172 165,167 167,177" fill="#38bdf8" />
                           </g>
 
-                          {/* Chest Rise Visual Indicator */}
-                          <g transform="translate(190, 130)">
-                            <rect x="0" y="0" width="150" height="36" rx="8" fill="#0c4a6e" stroke="#38bdf8" strokeWidth="1.5" />
-                            <text x="10" y="15" fill="#38bdf8" fontSize="10" fontWeight="bold">💨 CHEST VISIBLY RISES</text>
-                            <text x="10" y="28" fill="#e0f2fe" fontSize="8.5">Give 1-sec breath & watch recoil</text>
+                          {/* Manga Action Badge: フゥゥ! [ RESCUE BREATH ] */}
+                          <g transform="translate(190, 125)">
+                            <rect x="0" y="0" width="165" height="44" rx="10" fill="#0c4a6e" stroke="#38bdf8" strokeWidth="2" />
+                            <text x="10" y="18" fill="#7dd3fc" fontSize="10" fontWeight="extrabold">フゥゥ! [ RESCUE BREATH ]</text>
+                            <text x="10" y="32" fill="#ffffff" fontSize="8.5">Deliver 1-sec breath & watch chest rise</text>
                           </g>
                         </g>
                       )}
@@ -1445,6 +1724,455 @@ export function MultilingualVideoPlayer() {
                 </div>
               </div>
             </div>
+          ) : selectedVideoId === 'hospital-patient-intake' ? (
+            /* =========================================================================
+               REALISTIC SIMULATION: PATIENT TAKEN BY HOSPITAL / AMBULANCE ADMISSION
+               ========================================================================= */
+            <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+              
+              {/* Left/Center Visual Simulation Stage */}
+              <div className="lg:col-span-8 bg-slate-900/95 border border-slate-800 rounded-3xl p-4 lg:p-6 shadow-2xl relative overflow-hidden flex flex-col min-h-[420px]">
+                
+                {/* 5-Phase Action Mode Switcher */}
+                <div className="w-full flex flex-wrap items-center gap-1.5 p-1.5 bg-slate-950/90 rounded-2xl border border-slate-800 text-xs mb-3">
+                  <span className="text-slate-400 font-mono text-[10px] px-2 font-bold uppercase tracking-wider hidden sm:inline">
+                    Intake Phase:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => jumpToHospitalStep('loading')}
+                    className={`px-2.5 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 ${
+                      activeHospitalAction === 'loading'
+                        ? "bg-amber-600 text-white shadow-xs"
+                        : "text-slate-400 hover:text-white hover:bg-slate-800"
+                    }`}
+                  >
+                    <span>1. Stretcher Loading</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => jumpToHospitalStep('transit')}
+                    className={`px-2.5 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 ${
+                      activeHospitalAction === 'transit'
+                        ? "bg-red-600 text-white shadow-xs"
+                        : "text-slate-400 hover:text-white hover:bg-slate-800"
+                    }`}
+                  >
+                    <Siren size={12} className="animate-spin text-red-300" />
+                    <span>2. Ambulance 108 Transit</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => jumpToHospitalStep('arrival')}
+                    className={`px-2.5 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 ${
+                      activeHospitalAction === 'arrival'
+                        ? "bg-cyan-600 text-white shadow-xs"
+                        : "text-slate-400 hover:text-white hover:bg-slate-800"
+                    }`}
+                  >
+                    <HospitalIcon size={12} />
+                    <span>3. ER Bay Arrival</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => jumpToHospitalStep('handoff')}
+                    className={`px-2.5 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 ${
+                      activeHospitalAction === 'handoff'
+                        ? "bg-teal-600 text-white shadow-xs"
+                        : "text-slate-400 hover:text-white hover:bg-slate-800"
+                    }`}
+                  >
+                    <Stethoscope size={12} />
+                    <span>4. SBAR Handoff</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => jumpToHospitalStep('bed')}
+                    className={`px-2.5 py-1 rounded-lg font-bold text-xs transition-all cursor-pointer flex items-center gap-1.5 ${
+                      activeHospitalAction === 'bed'
+                        ? "bg-emerald-600 text-white shadow-xs"
+                        : "text-slate-400 hover:text-white hover:bg-slate-800"
+                    }`}
+                  >
+                    <BedDouble size={12} />
+                    <span>5. ICU Bed Admission</span>
+                  </button>
+                </div>
+
+                {/* Main Dynamic Graphic Stage for Hospital Intake */}
+                <div className="relative w-full flex-1 flex items-center justify-center min-h-[250px] bg-slate-950/80 rounded-2xl border border-slate-800/80 p-3 overflow-hidden">
+                  
+                  {/* Subtle Hospital Tile / Horizon line */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-slate-900/60 to-slate-950 pointer-events-none" />
+
+                  {/* SCENE 1: ON-SCENE STRETCHER LOADING */}
+                  {activeHospitalAction === 'loading' && (
+                    <svg viewBox="0 0 520 250" className="w-full h-full max-h-[260px] drop-shadow-xl">
+                      {/* Ground line */}
+                      <line x1="10" y1="210" x2="510" y2="210" stroke="#334155" strokeWidth="2" />
+                      
+                      {/* Rear of 108 Ambulance */}
+                      <rect x="360" y="50" width="150" height="160" rx="8" fill="#0f172a" stroke="#e2e8f0" strokeWidth="2" />
+                      <rect x="375" y="65" width="120" height="70" rx="4" fill="#1e293b" stroke="#475569" strokeWidth="1.5" />
+                      {/* Flashing rear amber/red beacons */}
+                      <circle cx="375" cy="58" r="6" fill="#ef4444" className="animate-pulse" />
+                      <circle cx="495" cy="58" r="6" fill="#f59e0b" className="animate-pulse" />
+                      <rect x="365" y="145" width="140" height="15" fill="#ef4444" opacity="0.9" />
+                      <text x="435" y="156" fill="#ffffff" fontSize="9" fontWeight="bold" textAnchor="middle">108 ALS UNIT</text>
+
+                      {/* Motorized Stretcher with hydraulic scissor frame */}
+                      <line x1="160" y1="170" x2="280" y2="170" stroke="#94a3b8" strokeWidth="4" />
+                      <line x1="170" y1="170" x2="210" y2="208" stroke="#64748b" strokeWidth="3" />
+                      <line x1="270" y1="170" x2="230" y2="208" stroke="#64748b" strokeWidth="3" />
+                      <line x1="210" y1="170" x2="270" y2="208" stroke="#64748b" strokeWidth="3" />
+                      <line x1="230" y1="170" x2="170" y2="208" stroke="#64748b" strokeWidth="3" />
+                      {/* Stretcher wheels */}
+                      <circle cx="170" cy="208" r="6" fill="#0f172a" stroke="#cbd5e1" strokeWidth="2" />
+                      <circle cx="270" cy="208" r="6" fill="#0f172a" stroke="#cbd5e1" strokeWidth="2" />
+                      {/* Mattress & Patient */}
+                      <rect x="150" y="150" width="150" height="18" rx="4" fill="#0284c7" stroke="#38bdf8" strokeWidth="1.5" />
+                      <ellipse cx="170" cy="148" rx="10" ry="10" fill="#fed7aa" />
+                      {/* Oxygen mask & tubing */}
+                      <path d="M 172 148 L 180 152 L 182 145 Z" fill="#22d3ee" opacity="0.85" />
+                      <path d="M 178 150 Q 185 160 195 158" stroke="#38bdf8" strokeWidth="1.5" fill="none" />
+                      <rect x="180" y="146" width="105" height="14" rx="4" fill="#0369a1" />
+
+                      {/* Paramedic Rescuer 1 (Head Position - Guiding) */}
+                      <ellipse cx="120" cy="120" rx="12" ry="12" fill="#fed7aa" />
+                      <rect x="106" y="132" width="28" height="45" rx="5" fill="#ea580c" stroke="#fed7aa" strokeWidth="1.5" />
+                      <line x1="120" y1="145" x2="155" y2="155" stroke="#ea580c" strokeWidth="6" strokeLinecap="round" />
+                      <line x1="114" y1="177" x2="114" y2="208" stroke="#1e293b" strokeWidth="5" />
+                      <line x1="126" y1="177" x2="126" y2="208" stroke="#1e293b" strokeWidth="5" />
+                      <text x="120" y="148" fill="#ffffff" fontSize="7" fontWeight="bold" textAnchor="middle">EMT</text>
+
+                      {/* Paramedic Rescuer 2 (Foot Position - Securing Locking Stretcher) */}
+                      <ellipse cx="320" cy="120" rx="12" ry="12" fill="#fed7aa" />
+                      <rect x="306" y="132" width="28" height="45" rx="5" fill="#ea580c" stroke="#fed7aa" strokeWidth="1.5" />
+                      <line x1="320" y1="145" x2="295" y2="155" stroke="#ea580c" strokeWidth="6" strokeLinecap="round" />
+                      <line x1="314" y1="177" x2="314" y2="208" stroke="#1e293b" strokeWidth="5" />
+                      <line x1="326" y1="177" x2="326" y2="208" stroke="#1e293b" strokeWidth="5" />
+                      <text x="320" y="148" fill="#ffffff" fontSize="7" fontWeight="bold" textAnchor="middle">EMT</text>
+
+                      {/* Callout Banner */}
+                      <g transform="translate(140, 20)">
+                        <rect x="0" y="0" width="240" height="36" rx="8" fill="#0f172a" stroke="#f59e0b" strokeWidth="1.5" />
+                        <text x="12" y="16" fill="#f59e0b" fontSize="10" fontWeight="bold">PHASE 1: ON-SCENE STRETCHER LOADING</text>
+                        <text x="12" y="28" fill="#e2e8f0" fontSize="8.5">Cervical collar secured · Mobile pulse oximeter connected</text>
+                      </g>
+                    </svg>
+                  )}
+
+                  {/* SCENE 2: AMBULANCE 108 GREEN CORRIDOR TRANSIT */}
+                  {activeHospitalAction === 'transit' && (
+                    <svg viewBox="0 0 520 250" className="w-full h-full max-h-[260px] drop-shadow-xl">
+                      {/* Speed motion lines in background */}
+                      <line x1="20" y1="40" x2="120" y2="40" stroke="#38bdf8" strokeWidth="2" strokeDasharray="10 15" opacity="0.6" />
+                      <line x1="380" y1="50" x2="500" y2="50" stroke="#38bdf8" strokeWidth="2" strokeDasharray="10 15" opacity="0.6" />
+                      <line x1="10" y1="215" x2="510" y2="215" stroke="#0ea5e9" strokeWidth="3" />
+                      <line x1="10" y1="225" x2="510" y2="225" stroke="#475569" strokeWidth="2" strokeDasharray="20 20" />
+
+                      {/* Ambulance Body Moving Left-to-Right */}
+                      <g transform="translate(100, 70)">
+                        {/* Flashing roof emergency lightbar */}
+                        <rect x="120" y="-12" width="60" height="12" rx="3" fill="#0f172a" />
+                        <circle cx="132" cy="-6" r="8" fill="#ef4444" className="animate-ping" opacity="0.8" />
+                        <circle cx="132" cy="-6" r="6" fill="#ef4444" />
+                        <circle cx="168" cy="-6" r="8" fill="#3b82f6" className="animate-ping" opacity="0.8" />
+                        <circle cx="168" cy="-6" r="6" fill="#3b82f6" />
+
+                        {/* Main Chassis */}
+                        <path d="M 10 30 L 70 30 L 90 0 L 260 0 L 260 90 L 10 90 Z" fill="#ffffff" stroke="#cbd5e1" strokeWidth="2" />
+                        
+                        {/* Windshield & Side Windows */}
+                        <polygon points="72,28 88,6 120,6 120,28" fill="#0284c7" opacity="0.6" />
+                        <rect x="135" y="8" width="55" height="28" rx="3" fill="#0284c7" opacity="0.4" />
+                        <rect x="200" y="8" width="50" height="28" rx="3" fill="#0284c7" opacity="0.4" />
+
+                        {/* Emergency Reflective Stripes & Decals */}
+                        <rect x="10" y="45" width="250" height="14" fill="#ef4444" />
+                        <rect x="10" y="62" width="250" height="6" fill="#facc15" />
+                        <text x="140" y="56" fill="#ffffff" fontSize="9" fontWeight="extrabold" textAnchor="middle">108 EMERGENCY ADVANCED LIFE SUPPORT</text>
+
+                        {/* Wheels with Hubs */}
+                        <circle cx="60" cy="90" r="18" fill="#1e293b" stroke="#e2e8f0" strokeWidth="3" />
+                        <circle cx="60" cy="90" r="8" fill="#64748b" />
+                        <circle cx="215" cy="90" r="18" fill="#1e293b" stroke="#e2e8f0" strokeWidth="3" />
+                        <circle cx="215" cy="90" r="8" fill="#64748b" />
+
+                        {/* Wireless Telemetry Waves broadcasting upwards */}
+                        <path d="M 230 -10 Q 250 -30 270 -10" fill="none" stroke="#22d3ee" strokeWidth="2" className="animate-pulse" />
+                        <path d="M 220 -20 Q 250 -50 280 -20" fill="none" stroke="#22d3ee" strokeWidth="2" className="animate-pulse" />
+                        <text x="250" y="-35" fill="#22d3ee" fontSize="8" fontWeight="bold" textAnchor="middle">LIVE VITALS SYNC</text>
+                      </g>
+
+                      {/* Callout Banner */}
+                      <g transform="translate(130, 15)">
+                        <rect x="0" y="0" width="260" height="36" rx="8" fill="#0f172a" stroke="#ef4444" strokeWidth="1.5" />
+                        <text x="12" y="16" fill="#f87171" fontSize="10" fontWeight="bold">PHASE 2: GREEN CORRIDOR RAPID TRANSIT</text>
+                        <text x="12" y="28" fill="#cbd5e1" fontSize="8.5">Sirens active · Continuous telemetry sync to Trauma Bay</text>
+                      </g>
+                    </svg>
+                  )}
+
+                  {/* SCENE 3: ER TRAUMA BAY ARRIVAL */}
+                  {activeHospitalAction === 'arrival' && (
+                    <svg viewBox="0 0 520 250" className="w-full h-full max-h-[260px] drop-shadow-xl">
+                      {/* Hospital Emergency Department Entrance Architecture */}
+                      <rect x="40" y="30" width="440" height="180" rx="10" fill="#0f172a" stroke="#334155" strokeWidth="2" />
+                      
+                      {/* Emergency Illuminated Red Header Sign */}
+                      <rect x="110" y="42" width="300" height="32" rx="6" fill="#7f1d1d" stroke="#ef4444" strokeWidth="2" />
+                      <text x="260" y="62" fill="#ffffff" fontSize="11" fontWeight="extrabold" textAnchor="middle" letterSpacing="1">
+                        EMERGENCY & TRAUMA CARE · RESUSCITATION BAY
+                      </text>
+
+                      {/* Sliding Automated Glass Doors (Open) */}
+                      <rect x="140" y="80" width="105" height="130" fill="#0369a1" opacity="0.3" stroke="#38bdf8" strokeWidth="1.5" />
+                      <rect x="275" y="80" width="105" height="130" fill="#0369a1" opacity="0.3" stroke="#38bdf8" strokeWidth="1.5" />
+
+                      {/* Stretcher being wheeled into ER doors */}
+                      <g transform="translate(150, 45)">
+                        {/* Wheeled gurney */}
+                        <line x1="20" y1="130" x2="160" y2="130" stroke="#94a3b8" strokeWidth="4" />
+                        <line x1="30" y1="130" x2="60" y2="155" stroke="#64748b" strokeWidth="3" />
+                        <line x1="150" y1="130" x2="120" y2="155" stroke="#64748b" strokeWidth="3" />
+                        <circle cx="45" cy="155" r="5" fill="#0284c7" />
+                        <circle cx="135" cy="155" r="5" fill="#0284c7" />
+                        {/* Bed surface & Patient */}
+                        <rect x="15" y="115" width="150" height="14" rx="4" fill="#0284c7" />
+                        <ellipse cx="35" cy="112" rx="9" ry="9" fill="#fed7aa" />
+                        <rect x="44" y="110" width="105" height="12" rx="3" fill="#38bdf8" />
+
+                        {/* Paramedic pushing stretcher into ER */}
+                        <ellipse cx="0" cy="90" rx="10" ry="10" fill="#fed7aa" />
+                        <rect x="-10" y="100" width="22" height="35" rx="4" fill="#ea580c" />
+                        <line x1="5" y1="110" x2="20" y2="120" stroke="#ea580c" strokeWidth="5" strokeLinecap="round" />
+                        <line x1="-5" y1="135" x2="-5" y2="155" stroke="#1e293b" strokeWidth="4" />
+                        <line x1="5" y1="135" x2="5" y2="155" stroke="#1e293b" strokeWidth="4" />
+
+                        {/* Receiving ER Nurse holding automated door */}
+                        <ellipse cx="190" cy="90" rx="10" ry="10" fill="#fed7aa" />
+                        <rect x="180" y="100" width="20" height="35" rx="4" fill="#0d9488" />
+                        <line x1="180" y1="110" x2="165" y2="122" stroke="#0d9488" strokeWidth="5" strokeLinecap="round" />
+                        <line x1="185" y1="135" x2="185" y2="155" stroke="#1e293b" strokeWidth="4" />
+                        <line x1="195" y1="135" x2="195" y2="155" stroke="#1e293b" strokeWidth="4" />
+                      </g>
+
+                      {/* Callout Banner */}
+                      <g transform="translate(130, 212)">
+                        <rect x="0" y="0" width="260" height="28" rx="6" fill="#082f49" stroke="#0284c7" strokeWidth="1.5" />
+                        <text x="130" y="18" fill="#38bdf8" fontSize="9.5" fontWeight="bold" textAnchor="middle">
+                          PHASE 3: ARRIVAL AT RESUSCITATION SUITE
+                        </text>
+                      </g>
+                    </svg>
+                  )}
+
+                  {/* SCENE 4: SBAR CLINICAL HANDOFF */}
+                  {activeHospitalAction === 'handoff' && (
+                    <svg viewBox="0 0 520 250" className="w-full h-full max-h-[260px] drop-shadow-xl">
+                      {/* Clinical Bay Backdrop */}
+                      <rect x="20" y="20" width="480" height="205" rx="12" fill="#0f172a" stroke="#1e293b" strokeWidth="2" />
+                      
+                      {/* Left: Lead Paramedic in EMT uniform */}
+                      <g transform="translate(60, 50)">
+                        <ellipse cx="40" cy="30" rx="15" ry="16" fill="#fed7aa" stroke="#fdba74" strokeWidth="1.5" />
+                        <rect x="20" y="48" width="40" height="65" rx="6" fill="#ea580c" stroke="#fed7aa" strokeWidth="1.5" />
+                        <text x="40" y="70" fill="#ffffff" fontSize="9" fontWeight="bold" textAnchor="middle">108 EMT</text>
+                        {/* Arms holding SBAR clip folder */}
+                        <line x1="25" y1="65" x2="55" y2="78" stroke="#ea580c" strokeWidth="7" strokeLinecap="round" />
+                        <rect x="50" y="65" width="20" height="28" rx="3" fill="#fef08a" stroke="#ca8a04" strokeWidth="1.5" />
+                        <line x1="30" y1="113" x2="30" y2="155" stroke="#1e293b" strokeWidth="6" />
+                        <line x1="50" y1="113" x2="50" y2="155" stroke="#1e293b" strokeWidth="6" />
+                        <text x="40" y="172" fill="#fdba74" fontSize="9" fontWeight="bold" textAnchor="middle">Paramedic Lead</text>
+                      </g>
+
+                      {/* Center: Live SBAR Handoff Clinical Dialogue Bubble */}
+                      <g transform="translate(155, 35)">
+                        <rect x="0" y="0" width="200" height="135" rx="10" fill="#022c22" stroke="#14b8a6" strokeWidth="2" />
+                        <text x="12" y="20" fill="#2dd4bf" fontSize="10" fontWeight="extrabold">SBAR CLINICAL PROTOCOL</text>
+                        <text x="12" y="40" fill="#e2e8f0" fontSize="8.5"><tspan fill="#f59e0b" fontWeight="bold">S</tspan>ituation: Acute chest pain & dyspnea</text>
+                        <text x="12" y="60" fill="#e2e8f0" fontSize="8.5"><tspan fill="#38bdf8" fontWeight="bold">B</tspan>ackground: Hypertensive, No known drug allergy</text>
+                        <text x="12" y="80" fill="#e2e8f0" fontSize="8.5"><tspan fill="#a855f7" fontWeight="bold">A</tspan>ssessment: HR 82, SpO2 98%, BP 122/78</text>
+                        <text x="12" y="100" fill="#e2e8f0" fontSize="8.5"><tspan fill="#4ade80" fontWeight="bold">R</tspan>ecommendation: Admit Trauma ICU Bed #04</text>
+                        <line x1="12" y1="112" x2="188" y2="112" stroke="#115e59" strokeWidth="1" />
+                        <text x="12" y="125" fill="#34d399" fontSize="8" fontWeight="bold">✓ Handoff Accepted by ER Chief</text>
+                      </g>
+
+                      {/* Right: ER Chief Physician (White coat & stethoscope) */}
+                      <g transform="translate(380, 50)">
+                        <ellipse cx="40" cy="30" rx="15" ry="16" fill="#fed7aa" stroke="#fdba74" strokeWidth="1.5" />
+                        <rect x="20" y="48" width="40" height="65" rx="6" fill="#f8fafc" stroke="#94a3b8" strokeWidth="1.5" />
+                        {/* Stethoscope */}
+                        <path d="M 30 52 Q 40 70 50 52" fill="none" stroke="#0284c7" strokeWidth="2.5" />
+                        <circle cx="40" cy="68" r="3.5" fill="#0284c7" />
+                        {/* Doctor arms holding tablet */}
+                        <line x1="55" y1="65" x2="25" y2="78" stroke="#f8fafc" strokeWidth="7" strokeLinecap="round" />
+                        <rect x="15" y="68" width="22" height="26" rx="3" fill="#0f172a" stroke="#38bdf8" strokeWidth="1.5" />
+                        <line x1="30" y1="113" x2="30" y2="155" stroke="#1e293b" strokeWidth="6" />
+                        <line x1="50" y1="113" x2="50" y2="155" stroke="#1e293b" strokeWidth="6" />
+                        <text x="40" y="172" fill="#38bdf8" fontSize="9" fontWeight="bold" textAnchor="middle">ER Chief Physician</text>
+                      </g>
+
+                      {/* Callout Footer */}
+                      <g transform="translate(130, 185)">
+                        <rect x="0" y="0" width="260" height="26" rx="6" fill="#1e1b4b" stroke="#818cf8" strokeWidth="1.5" />
+                        <text x="130" y="17" fill="#c7d2fe" fontSize="9" fontWeight="bold" textAnchor="middle">
+                          PHASE 4: SBAR CLINICAL HANDOFF COMPLETED
+                        </text>
+                      </g>
+                    </svg>
+                  )}
+
+                  {/* SCENE 5: TRAUMA ICU BED ADMISSION & GUARDIAN ALERT */}
+                  {activeHospitalAction === 'bed' && (
+                    <svg viewBox="0 0 520 250" className="w-full h-full max-h-[260px] drop-shadow-xl">
+                      {/* ICU Bay Room Frame */}
+                      <rect x="10" y="15" width="500" height="215" rx="12" fill="#0b1329" stroke="#1e293b" strokeWidth="2" />
+                      
+                      {/* Bed Headboard & Motorized Hospital Bed #04 */}
+                      <rect x="40" y="60" width="20" height="110" rx="4" fill="#334155" />
+                      <line x1="50" y1="125" x2="310" y2="125" stroke="#94a3b8" strokeWidth="5" />
+                      <line x1="80" y1="125" x2="80" y2="185" stroke="#475569" strokeWidth="4" />
+                      <line x1="280" y1="125" x2="280" y2="185" stroke="#475569" strokeWidth="4" />
+                      <circle cx="80" cy="185" r="5" fill="#0f172a" stroke="#cbd5e1" strokeWidth="1.5" />
+                      <circle cx="280" cy="185" r="5" fill="#0f172a" stroke="#cbd5e1" strokeWidth="1.5" />
+                      
+                      {/* Clean hospital mattress & Patient Resting */}
+                      <rect x="55" y="105" width="245" height="18" rx="4" fill="#0284c7" stroke="#38bdf8" strokeWidth="1.5" />
+                      <ellipse cx="90" cy="100" rx="12" ry="12" fill="#fed7aa" />
+                      <rect x="105" y="98" width="180" height="15" rx="4" fill="#e0f2fe" opacity="0.9" />
+
+                      {/* Bed Label Sign */}
+                      <rect x="140" y="30" width="120" height="24" rx="5" fill="#0f172a" stroke="#10b981" strokeWidth="1.5" />
+                      <text x="200" y="46" fill="#34d399" fontSize="10" fontWeight="extrabold" textAnchor="middle">TRAUMA BED #04</text>
+
+                      {/* Multiparameter ICU Cardiac Telemetry Monitor on Articulating Arm */}
+                      <g transform="translate(340, 35)">
+                        <rect x="0" y="0" width="150" height="95" rx="8" fill="#020617" stroke="#22d3ee" strokeWidth="2" />
+                        <text x="10" y="16" fill="#22d3ee" fontSize="8" fontWeight="bold">APOLLO PATIENT MONITOR</text>
+                        {/* Heart Rate Graph */}
+                        <path d="M 10 35 L 30 35 L 35 24 L 40 46 L 45 30 L 50 35 L 90 35" fill="none" stroke="#10b981" strokeWidth="2" />
+                        <text x="100" y="36" fill="#10b981" fontSize="11" fontWeight="extrabold">82</text>
+                        <text x="122" y="36" fill="#6ee7b7" fontSize="7">BPM</text>
+                        {/* SpO2 */}
+                        <path d="M 10 58 Q 30 52 50 58 T 90 58" fill="none" stroke="#38bdf8" strokeWidth="2" />
+                        <text x="100" y="58" fill="#38bdf8" fontSize="11" fontWeight="extrabold">98%</text>
+                        <text x="126" y="58" fill="#bae6fd" fontSize="7">SpO2</text>
+                        {/* NIBP */}
+                        <text x="10" y="80" fill="#facc15" fontSize="8">NIBP: 122/78 (92)</text>
+                        <text x="95" y="80" fill="#facc15" fontSize="8">RESP: 16</text>
+                      </g>
+
+                      {/* IV Infusion Drip Stand */}
+                      <line x1="320" y1="50" x2="320" y2="185" stroke="#cbd5e1" strokeWidth="3" />
+                      <line x1="310" y1="50" x2="330" y2="50" stroke="#cbd5e1" strokeWidth="2" />
+                      <rect x="314" y="55" width="12" height="22" rx="3" fill="#bae6fd" stroke="#38bdf8" strokeWidth="1" />
+                      <line x1="320" y1="77" x2="250" y2="105" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="3 3" />
+
+                      {/* Large Guardian Notification Verified Status Banner */}
+                      <g transform="translate(40, 150)">
+                        <rect x="0" y="0" width="440" height="42" rx="8" fill="#064e3b" stroke="#10b981" strokeWidth="2" />
+                        <circle cx="24" cy="21" r="10" fill="#10b981" />
+                        <text x="24" y="25" fill="#ffffff" fontSize="11" fontWeight="bold" textAnchor="middle">✓</text>
+                        <text x="44" y="18" fill="#a7f3d0" fontSize="10" fontWeight="extrabold">
+                          PATIENT ADMISSION SECURED & GUARDIAN ALERT DISPATCHED
+                        </text>
+                        <text x="44" y="32" fill="#ffffff" fontSize="8.5">
+                          Admitted to Apollo Jubilee Hills Bed #04 under Dr. Ananya Sen. Guardian notified via SMS.
+                        </text>
+                      </g>
+                    </svg>
+                  )}
+                </div>
+
+                {/* Real-time Subtitle & Step Guide overlay */}
+                <div className="w-full mt-3 bg-slate-950/90 border border-slate-800 rounded-2xl p-3 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                    <span className="text-xs text-slate-200 font-medium">
+                      {langData.steps[currentPhaseIndex] || langData.steps[0]}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-cyan-400 font-mono font-bold shrink-0">
+                    Phase {currentPhaseIndex + 1}/{langData.subtitles.length}
+                  </span>
+                </div>
+              </div>
+
+              {/* Right Side: Hospital Emergency Command & Live Telemetry HUD */}
+              <div className="lg:col-span-4 space-y-4">
+                
+                {/* Emergency Hospital Status Card */}
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-xl space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5 font-mono">
+                      <HospitalIcon size={14} />
+                      Receiving Trauma Center
+                    </span>
+                    <span className="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-800 font-mono px-2 py-0.5 rounded-full font-bold">
+                      Bed Locked
+                    </span>
+                  </div>
+
+                  <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-2">
+                    <div className="text-sm font-bold text-white flex items-center gap-2">
+                      <span>Apollo Jubilee Hills Trauma ER</span>
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      Road No 72, Film Nagar, Jubilee Hills, Hyderabad
+                    </div>
+                    <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                      <span className="text-slate-400">Allocated Ward:</span>
+                      <span className="text-cyan-300 font-bold font-mono">Trauma ICU Bay #04</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-slate-400">Attending Physician:</span>
+                      <span className="text-emerald-300 font-semibold">Dr. Ananya Sen, MD</span>
+                    </div>
+                  </div>
+
+                  {/* Real-time Telemetry HUD */}
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                      <div className="text-[9px] text-slate-500 font-mono uppercase">Heart Rate</div>
+                      <div className="text-base font-extrabold text-emerald-400 font-mono mt-0.5">82</div>
+                      <div className="text-[9px] text-slate-400">BPM Normal</div>
+                    </div>
+                    <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                      <div className="text-[9px] text-slate-500 font-mono uppercase">Oxygen</div>
+                      <div className="text-base font-extrabold text-cyan-400 font-mono mt-0.5">98%</div>
+                      <div className="text-[9px] text-slate-400">On 4L O2</div>
+                    </div>
+                    <div className="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                      <div className="text-[9px] text-slate-500 font-mono uppercase">Blood Press.</div>
+                      <div className="text-base font-extrabold text-amber-400 font-mono mt-0.5">122/78</div>
+                      <div className="text-[9px] text-slate-400">mmHg MAP 92</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Family Guardian Automatic Alert Card */}
+                <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-4 text-xs space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div className="text-slate-200 font-bold flex items-center gap-1.5">
+                      <Shield size={14} className="text-purple-400" />
+                      <span>Guardian Network Alert</span>
+                    </div>
+                    <span className="text-[10px] bg-purple-950 text-purple-300 border border-purple-800 px-2 py-0.5 rounded font-mono">
+                      Auto-Dispatched
+                    </span>
+                  </div>
+                  <p className="text-slate-300 text-[11px] leading-relaxed bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 font-mono">
+                    "Care Preempt Alert: Your family member has arrived at Apollo Jubilee Hills Emergency Trauma Ward. Admitted to Bed #04 under Dr. Ananya Sen. Live telemetry synced."
+                  </p>
+                  <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono pt-1">
+                    <span>Guardian Phone: +91 98490 12345</span>
+                    <span className="text-emerald-400">SMS & App Confirmed</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           ) : (
             /* =========================================================================
                OTHER FIRST AID SIMULATORS: HEIMLICH, BLEEDING, BURNS, STROKE, SEIZURE
@@ -1470,6 +2198,7 @@ export function MultilingualVideoPlayer() {
                     {video.iconType === 'burns' && <Flame size={32} className="text-amber-400" />}
                     {video.iconType === 'stroke' && <Clock size={32} className="text-purple-400" />}
                     {video.iconType === 'seizure' && <Activity size={32} className="text-sky-400" />}
+                    {video.iconType === 'hospital_intake' && <HospitalIcon size={32} className="text-cyan-400" />}
                   </div>
 
                   <div>

@@ -94,7 +94,7 @@ export default function DashShell({ title, nav, children, accent = "teal" }: Das
             <Shield className="text-white" size={18} />
           </div>
           <div>
-            <div className="font-display font-bold text-slate-900 leading-tight">Silent Guardian</div>
+            <div className="font-display font-bold text-slate-900 leading-tight">Care Preempt</div>
             <div className={`text-[10px] uppercase tracking-[0.18em] font-bold ${
               accent === 'teal' ? 'text-teal-700' : accent === 'amber' ? 'text-amber-700' : 'text-slate-700'
             }`}>

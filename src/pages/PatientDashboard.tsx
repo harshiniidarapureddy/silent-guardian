@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Routes, Route, Link, useSearchParams } from "react-router-dom";
+import { Routes, Route, Link, useSearchParams, Navigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Textarea } from "../components/ui/textarea";
@@ -24,10 +24,11 @@ import { AudioWaveformVisualizer } from "../components/triage/AudioWaveformVisua
 import { PhotoUploadModal } from "../components/patient/PhotoUploadModal";
 import { CatalogPagination } from "../components/ui/CatalogPagination";
 import { MultilingualVideoPlayer } from "../components/patient/MultilingualVideoPlayer";
-import { WellnessTracker } from "../components/patient/WellnessTracker";
+import { WearablesManager } from "../components/patient/WearablesManager";
 
 const NAV: NavItem[] = [
   { key: "overview", to: "/patient", label: "Overview", icon: Activity, exact: true },
+  { key: "vitals", to: "/patient/vitals", label: "Vitals & Wearables", icon: HeartPulse },
   { key: "triage", to: "/patient/triage", label: "AI Triage", icon: MessageCircle },
   { key: "guardians", to: "/patient/guardians", label: "Guardian Network (10+)", icon: ShieldAlert },
   { key: "doctors", to: "/patient/doctors", label: "Doctors Directory", icon: Users },
@@ -36,7 +37,6 @@ const NAV: NavItem[] = [
   { key: "blood", to: "/patient/blood", label: "Blood Network", icon: Heart },
   { key: "alerts", to: "/patient/alerts", label: "Alerts & SOS", icon: Siren },
   { key: "medicine", to: "/patient/medicine", label: "Medicine Guide (500+)", icon: Pill },
-  { key: "wellness", to: "/patient/wellness", label: "Wellness", icon: HeartPulse },
 ];
 
 const sevClass = (s: string) => ({
@@ -160,6 +160,12 @@ function Overview() {
             </div>
 
             <div className="mt-6 flex flex-wrap gap-3">
+              <Link to="/patient/vitals">
+                <Button className="rounded-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold shadow-md hover:scale-105 transition-all">
+                  <HeartPulse size={16} className="mr-2" />
+                  Live Vitals & Wearables
+                </Button>
+              </Link>
               <Link to="/patient/triage">
                 <Button className="rounded-full bg-white text-teal-900 hover:bg-teal-50 font-bold shadow-md hover:scale-105 transition-all">
                   <MessageCircle size={16} className="mr-2 text-teal-700" />
@@ -211,10 +217,18 @@ function Overview() {
             <div className="mt-3 font-extrabold text-white text-base truncate max-w-[200px]">
               {profile.preferred_name || "Active User"}
             </div>
-            <div className="text-xs text-teal-100 flex items-center gap-1.5 mt-0.5">
+            <div className="text-xs text-teal-100 flex items-center justify-center gap-1.5 mt-0.5 flex-wrap">
               <span className="font-semibold">Blood: {profile.blood_group || "O+"}</span>
+              {profile.willing_to_donate && (
+                <span className="bg-red-500/80 text-white text-[10px] px-1.5 py-0.5 rounded font-bold">Donor</span>
+              )}
               <span>·</span>
-              <span>{profile.location || "Hyderabad"}</span>
+              <span>{profile.age ? `${profile.age} yrs` : (profile.age_bracket || "Adult")}</span>
+              <span>·</span>
+              <span>{profile.gender || "Citizen"}</span>
+            </div>
+            <div className="text-[11px] text-teal-200 mt-0.5">
+              📍 {profile.location || "Hyderabad, Telangana"}
             </div>
 
             <div className="mt-2.5 px-3 py-1 rounded-full bg-purple-500/20 border border-purple-400/40 text-[11px] font-bold text-purple-200 flex items-center gap-1.5">
@@ -244,10 +258,30 @@ function Overview() {
       {/* Profile Health Vitals Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: "Blood group", v: profile.blood_group || "O+", icon: Heart, sub: "Donor verified" },
-          { label: "Life stage", v: profile.age_bracket || "Adult", icon: Users, sub: "Family head" },
-          { label: "Language", v: (profile.language || "en").toUpperCase(), icon: Globe, sub: "Multilingual AI" },
-          { label: "First-aid ready", v: profile.first_aid_cpr ? "Certified / Ready" : "Learning", icon: ShieldAlert, sub: "First responder" },
+          {
+            label: "Blood Group",
+            v: profile.blood_group || "O+",
+            icon: Heart,
+            sub: profile.willing_to_donate ? "Registered Blood Donor" : "Available in Registry"
+          },
+          {
+            label: "Age & Gender",
+            v: `${profile.age ? `${profile.age} yrs` : (profile.age_bracket || "Adult")} · ${profile.gender || "Citizen"}`,
+            icon: Users,
+            sub: `City: ${profile.location || "Hyderabad"}`
+          },
+          {
+            label: "Language",
+            v: (profile.language || "en").toUpperCase(),
+            icon: Globe,
+            sub: "Multilingual AI Triage"
+          },
+          {
+            label: "First Aid & CPR",
+            v: profile.first_aid_level || (profile.first_aid_cpr ? "Certified CPR" : "Learning Basics"),
+            icon: ShieldAlert,
+            sub: profile.guardian_name ? `Guardian: ${profile.guardian_name}` : "First Responder Ready"
+          },
         ].map((c) => {
           const I = c.icon;
           return (
@@ -263,6 +297,75 @@ function Overview() {
             </div>
           );
         })}
+      </div>
+
+      {/* Active Hospital Intake & Emergency Transfer Status Tracker */}
+      <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-cyan-950 to-slate-900 border-2 border-cyan-500/40 p-5 sm:p-6 shadow-xl relative overflow-hidden">
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+          <div className="flex items-start gap-4">
+            <div className="p-3.5 rounded-2xl bg-cyan-500/20 text-cyan-300 border border-cyan-400/40 shrink-0 relative">
+              <HospitalIcon className="w-8 h-8 animate-pulse text-cyan-300" />
+              <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-cyan-500"></span>
+              </span>
+            </div>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs uppercase font-extrabold tracking-widest text-cyan-300 font-mono">
+                  Live Emergency Intake Active
+                </span>
+                <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/40 text-[10px] font-bold">
+                  Patient Taken by 108 ALS Ambulance
+                </Badge>
+                <span className="text-xs text-slate-400">|</span>
+                <span className="text-xs text-amber-300 font-mono">Corridor ETA: 4 Mins</span>
+              </div>
+              
+              <h3 className="text-base sm:text-lg font-extrabold text-white">
+                Apollo Jubilee Hills Emergency Trauma Ward · Bed #04 (ICU Resuscitation)
+              </h3>
+              
+              <div className="text-xs text-slate-300 flex items-center gap-3 flex-wrap pt-0.5">
+                <span>Attending: <strong>Dr. Ananya Sen, MD</strong> (Trauma & Critical Care)</span>
+                <span>·</span>
+                <span>Ambulance: <strong className="text-cyan-300 font-mono">#TG-09-EM-4022</strong> (Lead Paramedic: Officer Rajesh Varma)</span>
+                <span>·</span>
+                <span className="text-emerald-400 font-semibold">✓ Guardian Auto-Alerted</span>
+              </div>
+
+              {/* Real-time telemetry pills */}
+              <div className="flex items-center gap-2 pt-2 flex-wrap text-[11px] font-mono">
+                <span className="px-2 py-0.5 rounded-md bg-slate-800 text-emerald-300 border border-slate-700">
+                  HR: 82 BPM (Normal)
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-800 text-cyan-300 border border-slate-700">
+                  SpO2: 98% (4L O2)
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-800 text-amber-300 border border-slate-700">
+                  BP: 122/78 mmHg
+                </span>
+                <span className="px-2 py-0.5 rounded-md bg-slate-800 text-purple-300 border border-slate-700">
+                  SBAR Handoff: Bay 04
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0">
+            <Link to="/patient/awareness">
+              <Button className="bg-gradient-to-r from-cyan-500 to-teal-500 hover:from-cyan-600 hover:to-teal-600 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg">
+                <Play size={14} className="mr-1.5 fill-current" />
+                Watch Intake Simulator Video
+              </Button>
+            </Link>
+            <Link to="/patient/hospitals">
+              <Button variant="outline" className="border-cyan-500/40 text-cyan-300 hover:bg-cyan-950 text-xs rounded-xl font-bold">
+                Hospital Command
+              </Button>
+            </Link>
+          </div>
+        </div>
       </div>
 
       {/* Featured Family Guardian Safety & Community Alerts */}
@@ -3260,9 +3363,9 @@ function MedicineGuide() {
   );
 }
 
-// 8. WELLNESS DASHBOARD & STEP TRACKER
+// 8. WELLNESS / VITALS (Wearables & Real-time Vitals)
 function Wellness() {
-  return <WellnessTracker />;
+  return <WearablesManager />;
 }
 
 // 9. DOCTORS DIRECTORY (Comprehensive Clinical Profiles)
@@ -3550,15 +3653,20 @@ export default function PatientDashboard() {
     <DashShell title="User Safety Portal" nav={NAV} accent="teal">
       <Routes>
         <Route path="/" element={<Overview />} />
+        <Route path="/vitals" element={<WearablesManager />} />
+        <Route path="/vitals-wellness" element={<Navigate to="/patient/vitals" replace />} />
+        <Route path="/wearables" element={<Navigate to="/patient/vitals" replace />} />
+        <Route path="/wellness" element={<Navigate to="/patient/vitals" replace />} />
+        <Route path="/account" element={<Navigate to="/patient/vitals" replace />} />
         <Route path="/triage" element={<Triage />} />
         <Route path="/guardians" element={<GuardianNetwork />} />
         <Route path="/doctors" element={<DoctorsDirectory />} />
         <Route path="/hospitals" element={<HospitalFinder />} />
         <Route path="/awareness" element={<VideoAwareness />} />
+        <Route path="/simulator" element={<Navigate to="/patient/awareness" replace />} />
         <Route path="/blood" element={<BloodNetwork />} />
         <Route path="/alerts" element={<AlertsAndSOS />} />
         <Route path="/medicine" element={<MedicineGuide />} />
-        <Route path="/wellness" element={<Wellness />} />
       </Routes>
     </DashShell>
   );

@@ -4,7 +4,10 @@ import { toast } from "sonner";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Shield, Hospital, UserCog, ArrowLeft, Check, AlertCircle, Eye, EyeOff, Lock, Mail, User, Phone, CheckCircle2 } from "lucide-react";
+import {
+  Shield, Hospital, UserCog, ArrowLeft, Check, AlertCircle, Eye, EyeOff,
+  Lock, Mail, Phone, CheckCircle2, ArrowRight
+} from "lucide-react";
 import { api, saveAuth } from "../lib/api";
 
 const ROLE_META = {
@@ -13,21 +16,21 @@ const ROLE_META = {
     icon: Shield,
     badge: "Personal",
     hint: "Emergency SOS, multilingual CPR guides, AI symptom triage & Guardian network.",
-    color: "teal"
+    color: "teal",
   },
   hospital: {
     label: "Hospital Emergency Command",
     icon: Hospital,
     badge: "Clinical",
-    hint: "ICU / Trauma bed telemetry, 500+ ambulance fleet dispatch & pharmacy.",
-    color: "amber"
+    hint: "ICU / Trauma bed telemetry, ambulance fleet dispatch & admission triage.",
+    color: "amber",
   },
   admin: {
     label: "Platform Security Admin",
     icon: UserCog,
     badge: "Enterprise",
-    hint: "Two-factor verification, 150+ audit logs, NABH/HIPAA compliance & fraud defense.",
-    color: "slate"
+    hint: "Administrative audit logs, security analytics, and fraud defense.",
+    color: "slate",
   },
 };
 
@@ -37,20 +40,18 @@ export default function Auth() {
   const [mode, setMode] = useState<"signin" | "signup">(params.get("mode") === "signup" ? "signup" : "signin");
   const [role, setRole] = useState<'patient' | 'hospital' | 'admin'>((params.get("role") as any) || "patient");
   
-  // Form fields
-  const [fullName, setFullName] = useState("");
+  // Credentials
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [agreeTerms, setAgreeTerms] = useState(true);
   const [busy, setBusy] = useState(false);
 
   // Real-time password strength calculation
   const passwordCriteria = useMemo(() => {
     return {
-      length: password.length >= 8,
+      length: password.length >= 6,
       hasUpperLower: /[a-z]/.test(password) && /[A-Z]/.test(password),
       hasNumber: /\d/.test(password),
       hasSpecial: /[!@#$%^&*(),.?":{}|<>]/.test(password),
@@ -81,17 +82,23 @@ export default function Auth() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!email || !email.includes("@")) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+
     if (mode === "signup") {
-      if (password.length < 8) {
-        toast.error("Password must be at least 8 characters long for clinical data security.");
+      if (password.length < 6) {
+        toast.error("Password must be at least 6 characters long.");
         return;
       }
       if (password !== confirmPassword) {
         toast.error("Passwords do not match. Please verify both entries.");
         return;
       }
-      if (!agreeTerms) {
-        toast.error("Please agree to the emergency medical consent and DPDP security guidelines.");
+    } else {
+      if (!password) {
+        toast.error("Please enter your password.");
         return;
       }
     }
@@ -100,25 +107,41 @@ export default function Auth() {
     try {
       const endpoint = mode === "signup" ? "/auth/signup" : "/auth/login";
       const payload = mode === "signup"
-        ? { email, password, phone, role, name: fullName.trim() || undefined }
-        : { email, password };
+        ? {
+            email: email.toLowerCase().trim(),
+            password,
+            phone: phone.trim() || undefined,
+            role,
+          }
+        : { email: email.toLowerCase().trim(), password };
 
       const { data } = await api.post(endpoint, payload);
       saveAuth(data.token, data.user);
       
-      toast.success(
-        mode === "signup"
-          ? `Account created for ${data.user.preferred_name || data.user.email}!`
-          : `Welcome back, ${data.user.preferred_name || data.user.email}!`
-      );
-
-      // Instant role-specific onboarding navigation
-      if (data.user.role === "patient") {
-        navigate(data.user.onboarded ? "/patient" : "/onboarding");
-      } else if (data.user.role === "hospital") {
-        navigate("/hospital");
+      if (mode === "signup") {
+        if (data.user.role === "patient") {
+          toast.success("Account created! Let's set up your clinical safety profile.");
+          navigate("/onboarding");
+        } else if (data.user.role === "hospital") {
+          toast.success("Hospital command account created! Opening dashboard.");
+          navigate("/hospital");
+        } else {
+          toast.success("Admin security account created! Opening console.");
+          navigate("/admin");
+        }
       } else {
-        navigate("/admin");
+        toast.success(`Welcome back! Signed in successfully.`);
+        if (data.user.role === "patient") {
+          if (data.user.onboarded) {
+            navigate("/patient");
+          } else {
+            navigate("/onboarding");
+          }
+        } else if (data.user.role === "hospital") {
+          navigate("/hospital");
+        } else {
+          navigate("/admin");
+        }
       }
     } catch (err: any) {
       toast.error(err?.message || err?.response?.data?.detail || "Authentication failed. Please verify credentials.");
@@ -128,9 +151,9 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen grid lg:grid-cols-2 bg-slate-50">
+    <div className="min-h-screen grid lg:grid-cols-12 bg-slate-50">
       {/* Brand Visual Column */}
-      <div className="hidden lg:flex relative bg-slate-900 flex-col justify-between p-12 text-white overflow-hidden">
+      <div className="hidden lg:flex lg:col-span-5 relative bg-slate-900 flex-col justify-between p-10 text-white overflow-hidden">
         <div className="absolute inset-0 sg-grid-bg opacity-20 pointer-events-none"></div>
         <div className="relative z-10">
           <Link to="/" className="inline-flex items-center gap-2 text-sm text-slate-300 hover:text-white mb-8 transition-colors">
@@ -142,9 +165,9 @@ export default function Auth() {
               <Shield className="text-white" size={20} />
             </div>
             <div>
-              <div className="font-display font-bold text-xl leading-tight">Silent Guardian</div>
+              <div className="font-display font-bold text-xl leading-tight">Care Preempt</div>
               <div className="text-[10px] text-teal-400 font-mono tracking-wider uppercase">
-                Zero-Latency Healthcare Safety Grid
+                Proactive Healthcare Safety Grid
               </div>
             </div>
           </div>
@@ -153,13 +176,13 @@ export default function Auth() {
         <div className="relative z-10 max-w-md space-y-4">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-950/80 border border-teal-800 text-teal-300 text-xs font-semibold">
             <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
-            Integrated Emergency Response & Verification
+            Proactive Emergency Care & AI Triage
           </div>
-          <h2 className="font-display text-4xl font-bold leading-tight text-white">
-            Healthcare access that never pauses.
+          <h2 className="font-display text-3xl font-bold leading-tight text-white">
+            Healthcare protection that acts before emergencies escalate.
           </h2>
           <p className="text-slate-300 text-sm leading-relaxed">
-            Directly connect to 520+ verified trauma hospitals, 500+ real-time GPS ambulances, rare blood donors, and clinical AI awareness videos in 6 languages.
+            Create your account with email and password. Citizens are guided through a personalized clinical intake, while hospital staff and administrators gain immediate portal access.
           </p>
 
           <div className="pt-4 grid grid-cols-2 gap-3 text-xs text-slate-300 border-t border-slate-800">
@@ -169,33 +192,33 @@ export default function Auth() {
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 size={15} className="text-teal-400" />
-              <span>500+ Ambulances Dispatched</span>
+              <span>Real-Time Blood Donor Grid</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 size={15} className="text-teal-400" />
-              <span>Two-Factor Security & 2FA</span>
+              <span>Family Guardian SOS Beacons</span>
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 size={15} className="text-teal-400" />
-              <span>DPDP & HIPAA Compliance</span>
+              <span>Continuous Vitals Telemetry</span>
             </div>
           </div>
         </div>
 
         <div className="relative z-10 flex items-center justify-between text-xs text-slate-400 border-t border-slate-800/80 pt-4">
           <span>Enterprise Grade AES-256 Encryption</span>
-          <span className="font-mono text-teal-400">v2.4.0 Secure Node</span>
+          <span className="font-mono text-teal-400">Care Preempt v3.0</span>
         </div>
       </div>
 
       {/* Auth Form Column */}
-      <div className="flex items-center justify-center p-6 lg:p-12">
-        <div className="w-full max-w-md sg-fade-in">
+      <div className="lg:col-span-7 flex items-center justify-center p-6 lg:p-12 overflow-y-auto">
+        <div className="w-full max-w-lg sg-fade-in py-6">
           <div className="lg:hidden mb-6 flex items-center justify-between">
             <Link to="/" className="inline-flex items-center gap-2 text-xs font-semibold text-teal-700">
               <ArrowLeft size={14} /> Back to Overview
             </Link>
-            <span className="text-xs font-bold text-slate-700">Silent Guardian</span>
+            <span className="text-xs font-bold text-slate-700">Care Preempt</span>
           </div>
 
           {/* Mode Switcher Tabs */}
@@ -203,7 +226,7 @@ export default function Auth() {
             <button
               type="button"
               onClick={() => setMode("signin")}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+              className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${
                 mode === "signin"
                   ? "bg-white text-slate-900 shadow-sm"
                   : "text-slate-600 hover:text-slate-900"
@@ -214,7 +237,7 @@ export default function Auth() {
             <button
               type="button"
               onClick={() => setMode("signup")}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+              className={`flex-1 py-2.5 text-xs font-bold rounded-lg transition-all ${
                 mode === "signup"
                   ? "bg-white text-teal-900 shadow-sm"
                   : "text-slate-600 hover:text-slate-900"
@@ -226,19 +249,21 @@ export default function Auth() {
 
           <div className="mb-6">
             <h1 className="font-display text-2xl font-bold text-slate-900">
-              {mode === "signup" ? "Register Your Clinical Account" : "Access Your Portal"}
+              {mode === "signup" ? "Create Your Care Preempt Account" : "Sign In to Care Preempt"}
             </h1>
             <p className="mt-1 text-xs text-slate-600">
               {mode === "signup"
-                ? "Enter your details to initiate immediate access and safety net enrollment."
-                : "Enter your registered credentials to sign in."}
+                ? role === "patient"
+                  ? "Sign up with email & password. You will complete your clinical intake profile right after."
+                  : "Sign up with email & password to immediately access your institutional command dashboard."
+                : "Enter your registered credentials to access your safety network dashboard."}
             </p>
           </div>
 
           {/* Account Role Selector */}
           <div className="mb-5">
             <Label className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2 block">
-              1. Select Access Level
+              Select Account Type
             </Label>
             <div className="grid grid-cols-3 gap-2">
               {(Object.entries(ROLE_META) as [('patient' | 'hospital' | 'admin'), typeof ROLE_META['patient']][]).map(([k, m]) => {
@@ -249,7 +274,7 @@ export default function Auth() {
                     key={k}
                     type="button"
                     onClick={() => setRole(k)}
-                    className={`rounded-xl border p-2.5 text-left transition-all relative flex flex-col justify-between ${
+                    className={`rounded-xl border p-2.5 text-left transition-all relative flex flex-col justify-between cursor-pointer ${
                       isSelected
                         ? "bg-teal-50/70 border-teal-600 ring-2 ring-teal-600/20 shadow-xs"
                         : "bg-white border-slate-200 hover:border-slate-300 text-slate-700"
@@ -279,25 +304,10 @@ export default function Auth() {
 
           {/* Form */}
           <form onSubmit={submit} className="space-y-4">
-            {mode === "signup" && (
-              <div>
-                <Label className="text-xs font-semibold text-slate-700">Full Legal Name</Label>
-                <div className="relative mt-1">
-                  <User size={15} className="absolute left-3 top-3 text-slate-400" />
-                  <Input
-                    type="text"
-                    required
-                    placeholder={role === 'patient' ? "e.g. Ramesh Sharma" : role === 'hospital' ? "e.g. Dr. Ananya Sen (Medical Superintendent)" : "e.g. Security Admin Officer"}
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="pl-9 text-xs"
-                  />
-                </div>
-              </div>
-            )}
-
+            
+            {/* Email Address */}
             <div>
-              <Label className="text-xs font-semibold text-slate-700">Email Address</Label>
+              <Label className="text-xs font-semibold text-slate-700">Email Address *</Label>
               <div className="relative mt-1">
                 <Mail size={15} className="absolute left-3 top-3 text-slate-400" />
                 <Input
@@ -311,9 +321,10 @@ export default function Auth() {
               </div>
             </div>
 
+            {/* Mobile Phone (Optional on Signup) */}
             {mode === "signup" && (
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Mobile Phone (Emergency SMS alerts)</Label>
+                <Label className="text-xs font-semibold text-slate-700">Mobile Phone (Emergency SMS)</Label>
                 <div className="relative mt-1">
                   <Phone size={15} className="absolute left-3 top-3 text-slate-400" />
                   <Input
@@ -327,9 +338,10 @@ export default function Auth() {
               </div>
             )}
 
+            {/* Password Section */}
             <div>
               <div className="flex items-center justify-between">
-                <Label className="text-xs font-semibold text-slate-700">Password</Label>
+                <Label className="text-xs font-semibold text-slate-700">Password *</Label>
                 {mode === "signup" && password && (
                   <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded font-mono ${strengthColor}`}>
                     {strengthLabel}
@@ -341,7 +353,7 @@ export default function Auth() {
                 <Input
                   type={showPassword ? "text" : "password"}
                   required
-                  placeholder={mode === "signup" ? "Create a strong password" : "Enter your password"}
+                  placeholder={mode === "signup" ? "Create a password (min 6 characters)" : "Enter your password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="pl-9 pr-9 text-xs"
@@ -367,28 +379,14 @@ export default function Auth() {
                       style={{ width: `${Math.max(15, (strengthScore / 4) * 100)}%` }}
                     />
                   </div>
-
-                  <div className="grid grid-cols-2 gap-1 text-[10px] text-slate-600 pt-1">
-                    <span className={`flex items-center gap-1 ${passwordCriteria.length ? "text-emerald-700 font-bold" : "text-slate-400"}`}>
-                      {passwordCriteria.length ? "✓" : "○"} 8+ characters
-                    </span>
-                    <span className={`flex items-center gap-1 ${passwordCriteria.hasUpperLower ? "text-emerald-700 font-bold" : "text-slate-400"}`}>
-                      {passwordCriteria.hasUpperLower ? "✓" : "○"} Upper & lowercase
-                    </span>
-                    <span className={`flex items-center gap-1 ${passwordCriteria.hasNumber ? "text-emerald-700 font-bold" : "text-slate-400"}`}>
-                      {passwordCriteria.hasNumber ? "✓" : "○"} At least 1 number
-                    </span>
-                    <span className={`flex items-center gap-1 ${passwordCriteria.hasSpecial ? "text-emerald-700 font-bold" : "text-slate-400"}`}>
-                      {passwordCriteria.hasSpecial ? "✓" : "○"} Special symbol (!@#$)
-                    </span>
-                  </div>
                 </div>
               )}
             </div>
 
+            {/* Confirm Password for Signup */}
             {mode === "signup" && (
               <div>
-                <Label className="text-xs font-semibold text-slate-700">Confirm Password</Label>
+                <Label className="text-xs font-semibold text-slate-700">Confirm Password *</Label>
                 <div className="relative mt-1">
                   <Lock size={15} className="absolute left-3 top-3 text-slate-400" />
                   <Input
@@ -413,27 +411,47 @@ export default function Auth() {
               </div>
             )}
 
-            {mode === "signup" && (
-              <div className="flex items-start gap-2 pt-1">
-                <input
-                  type="checkbox"
-                  id="agreeTerms"
-                  checked={agreeTerms}
-                  onChange={(e) => setAgreeTerms(e.target.checked)}
-                  className="mt-0.5 rounded text-teal-700 focus:ring-teal-600 h-4 w-4"
-                />
-                <label htmlFor="agreeTerms" className="text-[11px] text-slate-600 leading-tight cursor-pointer">
-                  I consent to DPDP Act Section-9 medical data storage and allow verified emergency dispatchers to access my registered health info during code red emergencies.
-                </label>
+            {/* Note on signup flow */}
+            {mode === "signup" && role === "patient" && (
+              <div className="p-3 bg-teal-50 border border-teal-200 rounded-xl text-[11px] text-teal-800 flex items-start gap-2">
+                <Shield size={16} className="text-teal-700 shrink-0 mt-0.5" />
+                <span>
+                  After signing up, you will be guided step-by-step to enter your name, age, gender, language, location, blood group, first aid knowledge, guardian contact, and avatar.
+                </span>
+              </div>
+            )}
+
+            {mode === "signup" && role !== "patient" && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-800 flex items-start gap-2">
+                <Hospital size={16} className="text-amber-700 shrink-0 mt-0.5" />
+                <span>
+                  Institutional accounts ({role === "hospital" ? "Hospital Command" : "Security Admin"}) open their respective dashboard immediately upon account creation.
+                </span>
               </div>
             )}
 
             <Button
               type="submit"
               disabled={busy}
-              className="w-full h-11 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-semibold text-sm shadow-md transition-all mt-2"
+              className="w-full h-11 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-semibold text-sm shadow-md transition-all mt-3 cursor-pointer flex items-center justify-center gap-2"
             >
-              {busy ? "Processing..." : mode === "signup" ? "Complete Registration & Launch" : "Sign In to Safety Grid"}
+              {busy ? (
+                "Processing..."
+              ) : mode === "signup" ? (
+                role === "patient" ? (
+                  <>
+                    <span>Sign Up & Continue to Profile Setup</span>
+                    <ArrowRight size={16} />
+                  </>
+                ) : (
+                  <>
+                    <span>Sign Up & Open {role === "hospital" ? "Hospital Command" : "Admin Console"}</span>
+                    <ArrowRight size={16} />
+                  </>
+                )
+              ) : (
+                "Sign In to Care Preempt"
+              )}
             </Button>
           </form>
 
@@ -442,7 +460,7 @@ export default function Auth() {
             <p className="text-xs text-slate-600">
               {mode === "signin" ? (
                 <>
-                  New to Silent Guardian?{" "}
+                  New to Care Preempt?{" "}
                   <button
                     type="button"
                     onClick={() => {
@@ -450,7 +468,7 @@ export default function Auth() {
                       setPassword("");
                       setConfirmPassword("");
                     }}
-                    className="font-bold text-teal-700 hover:text-teal-800 underline underline-offset-2"
+                    className="font-bold text-teal-700 hover:text-teal-800 underline underline-offset-2 cursor-pointer"
                   >
                     Create your account now
                   </button>
@@ -465,7 +483,7 @@ export default function Auth() {
                       setPassword("");
                       setConfirmPassword("");
                     }}
-                    className="font-bold text-teal-700 hover:text-teal-800 underline underline-offset-2"
+                    className="font-bold text-teal-700 hover:text-teal-800 underline underline-offset-2 cursor-pointer"
                   >
                     Sign in with existing credentials
                   </button>
