@@ -65,3 +65,66 @@ h1, h2, h3, .font-display { font-family: 'Plus Jakarta Sans', 'Outfit', sans-ser
 
 .sg-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
 .sg-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+/* WCAG 2.1 AA Adaptive Hands-Free & Switch Navigation Mode */
+.a11y-hands-free button,
+.a11y-hands-free a,
+.a11y-hands-free input[type="checkbox"],
+.a11y-hands-free input[type="radio"],
+.a11y-hands-free select {
+  min-height: 44px;
+}
+
+.a11y-hands-free button[data-hotspot-pin="true"] {
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.a11y-hands-free input[type="checkbox"],
+.a11y-hands-free input[type="radio"] {
+  min-width: 24px;
+  min-height: 24px;
+}
+
+.a11y-hands-free *:focus-visible,
+.a11y-visual-first *:focus-visible {
+  outline: 3px solid #0F766E !important;
+  outline-offset: 2px !important;
+}
+
+/* Visual-First High-Contrast Scannability Enhancements */
+.a11y-visual-first {
+  --muted-foreground: 215 25% 32%;
+}
+
+.a11y-visual-first body {
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Clean Print Styling for Digital Organ Donor Card */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #FFFFFF !important;
+  }
+  .donor-card-print-area {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    max-width: 560px !important;
+    margin: 0 auto !important;
+  }
+}
+

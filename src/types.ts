@@ -57,6 +57,26 @@ export interface Hospital {
   };
 }
 
+export interface PatientAccessibilityProfile {
+  needsVoiceMode: boolean;
+  needsVisualFirst: boolean;
+  assistiveDevices: string[];
+  communicationNote: string;
+  badges: string[];
+}
+
+export interface PatientOrganDonorSummary {
+  isDonor: boolean;
+  pledgeId: string;
+  donateAll: boolean;
+  selectedOrgans: OrganType[];
+  nextOfKinName: string;
+  nextOfKinRelation: string;
+  nextOfKinPhone: string;
+  nextOfKinInformed: boolean;
+  pledgedAt: string;
+}
+
 export interface PatientRecord {
   id: string;
   name: string;
@@ -69,6 +89,8 @@ export interface PatientRecord {
   assigned_doctor: string;
   admitted: boolean;
   admission_time: string;
+  accessibilityProfile?: PatientAccessibilityProfile;
+  organDonor?: PatientOrganDonorSummary;
 }
 
 export interface SOSAlert {
@@ -361,3 +383,116 @@ export interface GroundedSearchResult {
   webSearchQueries?: string[];
   simulated?: boolean;
 }
+
+export type AccessibilityOnboardingOption =
+  | 'hands_free_voice'
+  | 'visual_first'
+  | 'assistive_devices'
+  | 'standard';
+
+export interface AccessibilityPreferences {
+  handsFreeVoice: boolean;
+  visualFirst: boolean;
+  assistiveDevicesEnabled: boolean;
+  standardExperience: boolean;
+  enlargedTargets: boolean;
+  autoReadAlerts: boolean;
+  simplifiedMedicalText: boolean;
+  onboardingCompleted: boolean;
+  updatedAt?: string;
+}
+
+export type AssistiveDeviceType =
+  | 'smart_glasses'
+  | 'hearing_aid'
+  | 'mobility_sensory'
+  | 'vitals_monitoring';
+
+export type AssistiveDeviceVisualKey =
+  | 'smart_vision_glasses'
+  | 'bone_conduction_specs'
+  | 'digital_hearing_aid'
+  | 'mobility_assist_aid'
+  | 'bp_monitor'
+  | 'pulse_oximeter'
+  | 'glucometer'
+  | 'ir_thermometer'
+  | 'nebulizer_ecg';
+
+export interface AssistiveDevice {
+  id: string;
+  name: string;
+  model: string;
+  type: AssistiveDeviceType;
+  connectionType: 'Bluetooth LE' | 'Companion App' | 'USB-C / Bridge';
+  connected: boolean;
+  batteryLevel: number;
+  lastSynced: string;
+  notes?: string;
+  visualKey?: AssistiveDeviceVisualKey;
+  altText?: string;
+  troubleshootingTips: string[];
+}
+
+export type AssistiveTechCategory =
+  | 'Vision Support'
+  | 'Hearing Support'
+  | 'Hands-Free Control'
+  | 'Mobility Aids'
+  | 'Vitals & Health Monitoring';
+
+export interface RecommendedAssistiveDevice {
+  id: string;
+  name: string;
+  manufacturer: string;
+  category: AssistiveTechCategory;
+  deviceType: AssistiveDeviceType;
+  visualKey: AssistiveDeviceVisualKey;
+  altText: string;
+  summary: string;
+  keyFeatures: string[];
+  compatibilityNote: string;
+  usageGuidance: string;
+  howToUseTip?: string;
+}
+
+export type OrganType =
+  | 'Heart'
+  | 'Kidneys'
+  | 'Liver'
+  | 'Corneas'
+  | 'Lungs'
+  | 'Pancreas'
+  | 'Tissue';
+
+export interface OrganDonorPledge {
+  isDonor: boolean;
+  donateAll: boolean;
+  selectedOrgans: OrganType[];
+  nextOfKinName: string;
+  nextOfKinRelation: string;
+  nextOfKinPhone: string;
+  nextOfKinInformed: boolean;
+  pledgeId: string;
+  pledgedAt: string;
+  updatedAt: string;
+  consentAcknowledged: boolean;
+}
+
+export interface TranscriptEntry {
+  id: string;
+  timestamp: string;
+  source: 'voice_assistant' | 'alert' | 'user_command' | 'guidance';
+  title?: string;
+  text: string;
+  severity?: 'info' | 'warning' | 'critical';
+}
+
+export interface VisualAlertBanner {
+  id: string;
+  title: string;
+  message: string;
+  severity: 'info' | 'warning' | 'critical';
+  timestamp: string;
+}
+

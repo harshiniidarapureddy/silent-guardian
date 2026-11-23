@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import { Shield, Heart, Siren, Hospital, Users, Globe, Activity, HeartPulse, Pill, Phone, ArrowRight, CheckCircle2, Lock } from "lucide-react";
+import { OnboardingVideoExplainer } from "../components/patient/OnboardingVideoExplainer";
 
 const StatPill = ({ label, value }: { label: string; value: string }) => (
   <div className="rounded-2xl bg-white/85 backdrop-blur-md border border-slate-200/80 px-5 py-4 shadow-sm">
@@ -21,6 +22,17 @@ const Feature = ({ icon: Icon, title, text }: { icon: any; title: string; text: 
 );
 
 export default function Landing() {
+  const [showVideoModal, setShowVideoModal] = useState(false);
+
+  useEffect(() => {
+    if (!showVideoModal) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowVideoModal(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showVideoModal]);
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Top Bar Header */}
@@ -91,12 +103,16 @@ export default function Landing() {
                     Emergency SOS
                   </Button>
                 </Link>
-                <Link to="/patient/awareness">
-                  <Button variant="ghost" className="rounded-full text-slate-700 h-12 px-5">
-                    <Globe size={18} className="mr-2 text-teal-600" />
-                    Multilingual Videos
-                  </Button>
-                </Link>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  data-testid="landing-watch-video-btn"
+                  onClick={() => setShowVideoModal(true)}
+                  className="rounded-full text-slate-700 h-12 px-5 cursor-pointer"
+                >
+                  <Globe size={18} className="mr-2 text-teal-600" />
+                  Multilingual Videos
+                </Button>
               </div>
 
               {/* Safety Badges */}
@@ -215,6 +231,27 @@ export default function Landing() {
           </div>
         </div>
       </footer>
+
+      {showVideoModal && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Care Preempt Multilingual Video Guide"
+          data-testid="landing-video-lightbox"
+          onClick={() => setShowVideoModal(false)}
+          className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"
+        >
+          <div
+            className="w-full max-w-4xl py-6 my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <OnboardingVideoExplainer
+              backLabel="Back to Overview"
+              onClose={() => setShowVideoModal(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -12,7 +12,8 @@ import {
   MessageCircle, Mic, MicOff, Send, Phone, Star, MapPin, Users, ShieldAlert,
   Play, Pause, RotateCcw, Volume2, VolumeX, CheckCircle2, AlertTriangle, ArrowRight,
   Filter, Search, Droplets, Check, X, Sparkles, Camera, Calendar, Clock, Award, Languages, UserCheck,
-  ExternalLink, ShoppingBag, Eye, Bed, Building2, Stethoscope, ChevronRight, Upload, Radio
+  ExternalLink, ShoppingBag, Eye, Bed, Building2, Stethoscope, ChevronRight, Upload, Radio,
+  Glasses, HeartHandshake, SlidersHorizontal
 } from "lucide-react";
 import DashShell, { NavItem } from "../components/DashShell";
 import { api, API } from "../lib/api";
@@ -25,11 +26,27 @@ import { PhotoUploadModal } from "../components/patient/PhotoUploadModal";
 import { CatalogPagination } from "../components/ui/CatalogPagination";
 import { MultilingualVideoPlayer } from "../components/patient/MultilingualVideoPlayer";
 import { WearablesManager } from "../components/patient/WearablesManager";
+import { AssistiveDevicesHub } from "../components/patient/AssistiveDevicesHub";
+import { OrganDonationRegistry } from "../components/patient/OrganDonationRegistry";
+import { PatientAccountManager } from "../components/patient/PatientAccountManager";
+import { PatientAwarenessHub } from "../components/patient/PatientAwarenessHub";
+import { useAccessibility } from "../context/AccessibilityContext";
+import { useFirebase } from "../context/FirebaseContext";
+import { AudioWaveform } from "../components/shared/AudioWaveform";
+import {
+  subscribeToTriageUpdates,
+  syncTriageUpdateToFirestore,
+  type PatientTriageUpdate,
+  type TriageLangCode,
+  type TriageSeverityLevel,
+} from "../lib/firestoreSync";
 
 const NAV: NavItem[] = [
   { key: "overview", to: "/patient", label: "Overview", icon: Activity, exact: true },
   { key: "vitals", to: "/patient/vitals", label: "Vitals & Wearables", icon: HeartPulse },
   { key: "triage", to: "/patient/triage", label: "AI Triage", icon: MessageCircle },
+  { key: "devices", to: "/patient/devices", label: "Assistive Devices", icon: Glasses },
+  { key: "organ-donation", to: "/patient/organ-donation", label: "Organ Donation", icon: HeartHandshake },
   { key: "guardians", to: "/patient/guardians", label: "Guardian Network (10+)", icon: ShieldAlert },
   { key: "doctors", to: "/patient/doctors", label: "Doctors Directory", icon: Users },
   { key: "hospitals", to: "/patient/hospitals", label: "Hospital Finder (500+)", icon: HospitalIcon },
@@ -37,6 +54,7 @@ const NAV: NavItem[] = [
   { key: "blood", to: "/patient/blood", label: "Blood Network", icon: Heart },
   { key: "alerts", to: "/patient/alerts", label: "Alerts & SOS", icon: Siren },
   { key: "medicine", to: "/patient/medicine", label: "Medicine Guide (500+)", icon: Pill },
+  { key: "profile", to: "/patient/profile", label: "Profile & Accessibility", icon: SlidersHorizontal },
 ];
 
 const sevClass = (s: string) => ({
@@ -48,6 +66,7 @@ const sevClass = (s: string) => ({
 
 // 1. OVERVIEW
 function Overview() {
+  const { organPledge, preferences } = useAccessibility();
   const [profile, setProfile] = useState<Partial<Profile>>({});
   const [stats, setStats] = useState<any>({});
   const [alerts, setAlerts] = useState<SOSAlert[]>([]);
@@ -73,6 +92,47 @@ function Overview() {
 
   return (
     <div className="space-y-6">
+      {/* Visual-First Simplified Step Guide when Visual-First Mode is Active */}
+      {preferences.visualFirst && (
+        <section
+          aria-label="Visual-First Care Steps"
+          data-testid="visual-first-overview-steps"
+          className="rounded-2xl bg-white border-2 border-teal-700 p-5 space-y-3"
+        >
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="text-xs font-bold uppercase tracking-wider text-teal-800">
+              Visual-First Mode · Scannable Emergency Actions (No Audio Needed)
+            </div>
+            <span className="text-xs font-semibold text-slate-600">
+              Live captions active below
+            </span>
+          </div>
+          <div className="grid sm:grid-cols-3 gap-3 text-xs">
+            <Link
+              to="/patient/triage"
+              className="p-3.5 rounded-xl bg-teal-50/70 border border-teal-200 hover:border-teal-600 flex items-start gap-2.5"
+            >
+              <span className="w-6 h-6 rounded-full bg-teal-700 text-white font-mono font-bold flex items-center justify-center flex-shrink-0">1</span>
+              <span><strong className="text-slate-900 block">Check Symptoms Visually</strong>Describe symptoms in text or photo triage with visual guidance.</span>
+            </Link>
+            <Link
+              to="/patient/devices"
+              className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-teal-600 flex items-start gap-2.5"
+            >
+              <span className="w-6 h-6 rounded-full bg-teal-700 text-white font-mono font-bold flex items-center justify-center flex-shrink-0">2</span>
+              <span><strong className="text-slate-900 block">Verify Assistive Devices</strong>Check smart glasses & hearing aid pairing and battery.</span>
+            </Link>
+            <Link
+              to="/patient/organ-donation"
+              className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 hover:border-teal-600 flex items-start gap-2.5"
+            >
+              <span className="w-6 h-6 rounded-full bg-teal-700 text-white font-mono font-bold flex items-center justify-center flex-shrink-0">3</span>
+              <span><strong className="text-slate-900 block">Organ Donor Directive</strong>Manage your Digital Organ Donor Card and family summary.</span>
+            </Link>
+          </div>
+        </section>
+      )}
+
       {/* High-Tech Animated Guardian Shield Radar & Alert Ticker */}
       <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 text-white border border-purple-500/30 shadow-lg relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5 z-10">
@@ -232,9 +292,20 @@ function Overview() {
             </div>
 
             <div className="mt-2.5 px-3 py-1 rounded-full bg-purple-500/20 border border-purple-400/40 text-[11px] font-bold text-purple-200 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
               Guardian Protected
             </div>
+
+            {organPledge.isDonor && (
+              <Link
+                to="/patient/organ-donation"
+                data-testid="overview-verified-donor-badge"
+                className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/25 border border-emerald-300/60 text-[11px] font-bold text-emerald-100 hover:bg-emerald-500/35 transition-colors"
+              >
+                <HeartHandshake size={13} aria-hidden="true" />
+                <span>Verified Donor Pledge</span>
+              </Link>
+            )}
 
             <button
               type="button"
@@ -592,6 +663,8 @@ interface TriageMessageItem {
 }
 
 function Triage() {
+  const { firebaseUser, authReady } = useFirebase();
+  const [cloudTriageUpdates, setCloudTriageUpdates] = useState<PatientTriageUpdate[]>([]);
   const [msgs, setMsgs] = useState<TriageMessageItem[]>([
     {
       role: "assistant",
@@ -652,6 +725,18 @@ function Triage() {
       }
     };
   }, []);
+
+  // Real-time Firestore syncing (onSnapshot) for Patient Triage Updates
+  useEffect(() => {
+    if (!authReady || !firebaseUser) {
+      setCloudTriageUpdates([]);
+      return;
+    }
+    const unsub = subscribeToTriageUpdates(firebaseUser.uid, (updates) => {
+      setCloudTriageUpdates(updates.slice(-10).reverse());
+    });
+    return () => unsub();
+  }, [authReady, firebaseUser]);
 
   // Web Speech API - Multilingual voice read-aloud for assistant triage messages
   const speakTriageMessage = (text: string, idx: number) => {
@@ -796,6 +881,28 @@ function Triage() {
       }
 
       setMsgs((m) => [...m, assistantMsg]);
+
+      // Sync patient triage update to Firestore in real time when signed in with Firebase Auth
+      if (firebaseUser?.emailVerified) {
+        const inferredSeverity: TriageSeverityLevel = resp.data?.guardian_alert_triggered
+          ? "critical"
+          : assistantMsg.photoAnalysis?.severity === "Critical"
+          ? "critical"
+          : assistantMsg.photoAnalysis?.severity === "Moderate" || isFeverCase
+          ? "high"
+          : isSkinCase
+          ? "medium"
+          : "low";
+        void syncTriageUpdateToFirestore(firebaseUser.uid, {
+          triageId: `tr-${Date.now()}`,
+          sessionId: sessionId.current,
+          symptomsSummary: userMsgText,
+          triageGuidance: reply,
+          severity: inferredSeverity,
+          language: langCode as TriageLangCode,
+          guardianAlertTriggered: Boolean(resp.data?.guardian_alert_triggered),
+        }).catch(() => {});
+      }
     } catch {
       toast.error("Triage temporarily unavailable");
     } finally {
@@ -976,6 +1083,21 @@ function Triage() {
           </div>
 
           <div className="flex items-center gap-2">
+            {(listening || activeSpeechIdx !== null) && (
+              <div className="hidden sm:flex items-center gap-1.5 rounded-lg bg-teal-50 border border-teal-200 px-2.5 py-1">
+                <AudioWaveform
+                  active={true}
+                  mode={listening ? "input" : "output"}
+                  variant="compact"
+                  theme="light"
+                  barCount={8}
+                  testId="triage-header-waveform"
+                />
+                <span className="text-[11px] font-semibold text-teal-800">
+                  {listening ? "Listening" : "Speaking"}
+                </span>
+              </div>
+            )}
             {/* Language Selector for Speech Synthesis & Recognition */}
             <div className="flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-1 text-slate-700">
               <Languages size={13} className="text-teal-600" />
@@ -1597,6 +1719,44 @@ function Triage() {
             <li>Use direct <strong>Order on Apollo/1mg</strong> buttons to book medicines in minutes.</li>
           </ul>
         </div>
+
+        {cloudTriageUpdates.length > 0 && (
+          <div
+            className="rounded-2xl bg-white border border-slate-200 p-5 shadow-sm space-y-2.5"
+            data-testid="synced-triage-history"
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="font-semibold text-sm text-slate-900">
+                Recent Triage Updates
+              </div>
+              <span className="text-[10px] font-mono text-teal-700 font-semibold">
+                Live Sync
+              </span>
+            </div>
+            <div className="space-y-2">
+              {cloudTriageUpdates.slice(0, 4).map((item) => (
+                <div
+                  key={item.triageId}
+                  className="rounded-xl border border-slate-100 bg-slate-50/70 p-2.5 space-y-1"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span
+                      className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded border ${sevClass(item.severity)}`}
+                    >
+                      {item.severity}
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-500">
+                      {item.updatedAtLabel || "Synced"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-800 font-medium line-clamp-2">
+                    {item.symptomsSummary}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Microphone Permission Modal */}
@@ -3657,12 +3817,15 @@ export default function PatientDashboard() {
         <Route path="/vitals-wellness" element={<Navigate to="/patient/vitals" replace />} />
         <Route path="/wearables" element={<Navigate to="/patient/vitals" replace />} />
         <Route path="/wellness" element={<Navigate to="/patient/vitals" replace />} />
-        <Route path="/account" element={<Navigate to="/patient/vitals" replace />} />
+        <Route path="/devices" element={<AssistiveDevicesHub />} />
+        <Route path="/organ-donation" element={<OrganDonationRegistry />} />
+        <Route path="/profile" element={<PatientAccountManager />} />
+        <Route path="/account" element={<Navigate to="/patient/profile" replace />} />
         <Route path="/triage" element={<Triage />} />
         <Route path="/guardians" element={<GuardianNetwork />} />
         <Route path="/doctors" element={<DoctorsDirectory />} />
         <Route path="/hospitals" element={<HospitalFinder />} />
-        <Route path="/awareness" element={<VideoAwareness />} />
+        <Route path="/awareness" element={<PatientAwarenessHub />} />
         <Route path="/simulator" element={<Navigate to="/patient/awareness" replace />} />
         <Route path="/blood" element={<BloodNetwork />} />
         <Route path="/alerts" element={<AlertsAndSOS />} />

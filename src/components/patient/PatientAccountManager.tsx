@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import {
   User,
   Shield,
@@ -29,6 +30,8 @@ import { Badge } from "../ui/badge";
 import { toast } from "sonner";
 import { api, getUser } from "../../lib/api";
 import { Profile } from "../../types";
+import { useAccessibility } from "../../context/AccessibilityContext";
+import { AccessibilitySettingsPanel } from "../accessibility/AccessibilitySettingsPanel";
 
 const ANIME_AVATARS = [
   { id: "kenji", name: "Dr. Kenji (Medic)", url: "https://api.dicebear.com/7.x/adventurer/svg?seed=KenjiDoctor&hair=short01&eyes=variant04" },
@@ -41,6 +44,8 @@ const ANIME_AVATARS = [
 
 export function PatientAccountManager() {
   const currentUser = getUser();
+  const location = useLocation();
+  const { organPledge } = useAccessibility();
   const [profile, setProfile] = useState<Partial<Profile>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -51,9 +56,9 @@ export function PatientAccountManager() {
   const [bloodGroup, setBloodGroup] = useState("O+");
   const [willingToDonate, setWillingToDonate] = useState(true);
   const [language, setLanguage] = useState("en");
-  const [location, setLocation] = useState("Hyderabad, Telangana");
+  const [locationCity, setLocationCity] = useState("Hyderabad, Telangana");
   const [allergies, setAllergies] = useState("None known (Penicillin tested negative)");
-  const [emergencyContact, setEmergencyContact] = useState("Sunita Sharma (Mother) &bull; +91 98450 99887");
+  const [emergencyContact, setEmergencyContact] = useState("Sunita Sharma (Mother) · +91 98450 99887");
   const [twoFactorActive, setTwoFactorActive] = useState(true);
   const [selectedAvatarUrl, setSelectedAvatarUrl] = useState(
     "https://api.dicebear.com/7.x/adventurer/svg?seed=KenjiDoctor&hair=short01&eyes=variant04"
@@ -67,11 +72,20 @@ export function PatientAccountManager() {
       setBloodGroup(p.blood_group || "O+");
       setWillingToDonate(p.willing_to_donate ?? true);
       setLanguage(p.language || "en");
-      setLocation(p.location || "Hyderabad, Telangana");
+      setLocationCity(p.location || "Hyderabad, Telangana");
       if (p.photo_url) setSelectedAvatarUrl(p.photo_url);
       setLoading(false);
     });
-  }, [currentUser]);
+  }, [currentUser?.id]);
+
+  useEffect(() => {
+    if (!loading && location.hash === "#accessibility-settings") {
+      const el = document.getElementById("accessibility-settings");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  }, [loading, location.hash]);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +97,7 @@ export function PatientAccountManager() {
         blood_group: bloodGroup,
         willing_to_donate: willingToDonate,
         language,
-        location,
+        location: locationCity,
         photo_url: selectedAvatarUrl,
       };
       await api.post("/profile", updated);
@@ -111,7 +125,7 @@ export function PatientAccountManager() {
         known_allergies: allergies,
         primary_emergency_contact: emergencyContact,
         primary_language: language,
-        jurisdiction: location,
+        jurisdiction: locationCity,
       },
       security_credentials: {
         two_factor_auth_enabled: twoFactorActive,
@@ -157,13 +171,18 @@ export function PatientAccountManager() {
             </div>
 
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-2xl font-bold font-display text-white">
                   {preferredName || "User Account"}
                 </h1>
                 <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/40 text-[10px] font-bold">
                   ✓ Verified Safety Net
                 </Badge>
+                {organPledge.isDonor && (
+                  <Badge className="bg-teal-500/25 text-teal-100 border-teal-300/50 text-[10px] font-bold">
+                    ✓ Verified Donor Pledge
+                  </Badge>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center gap-3 text-xs text-slate-300 mt-1">
@@ -375,8 +394,8 @@ export function PatientAccountManager() {
                 <Label className="text-xs font-bold text-slate-700">City / Medical Dispatch District</Label>
                 <Input
                   type="text"
-                  value={location}
-                  onChange={e => setLocation(e.target.value)}
+                  value={locationCity}
+                  onChange={e => setLocationCity(e.target.value)}
                   className="text-xs rounded-xl"
                 />
               </div>
@@ -491,6 +510,11 @@ export function PatientAccountManager() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Profile > Accessibility Settings */}
+      <div id="accessibility-settings" className="scroll-mt-24">
+        <AccessibilitySettingsPanel />
       </div>
     </div>
   );

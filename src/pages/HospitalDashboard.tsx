@@ -4,17 +4,24 @@ import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
-import { Activity, Users, BedDouble, Siren, Truck, UserCog, Pill, Hospital as HospitalIcon, Search, Check, RefreshCw, Star, Award, Clock, Languages } from "lucide-react";
+import { Activity, Users, BedDouble, Siren, Truck, UserCog, Pill, Hospital as HospitalIcon, Search, Check, RefreshCw, Star, Award, Clock, Languages, Glasses } from "lucide-react";
 import { toast } from "sonner";
 import { CatalogPagination } from "../components/ui/CatalogPagination";
 import DashShell, { NavItem } from "../components/DashShell";
 import { api } from "../lib/api";
 import { generate550Patients, generate500Hospitals } from "../lib/dataGenerator";
+import {
+  enrichPatientsWithInclusiveData,
+  filterHospitalPatients,
+} from "../lib/portalInclusiveData";
+import { PatientClinicalDirectivesModal } from "../components/hospital/HospitalInclusiveTriagePanel";
+import { HospitalSpecialDevicesTab } from "../components/hospital/HospitalSpecialDevicesTab";
 import { PatientRecord, BedCapacity, Ambulance, Doctor, PharmacyItem, Hospital } from "../types";
 
 const NAV: NavItem[] = [
   { key: "overview", to: "/hospital", label: "Command Center", icon: Activity, exact: true },
   { key: "intake", to: "/hospital/intake", label: "Patient Intake (550+)", icon: Users },
+  { key: "special-devices", to: "/hospital/special-devices", label: "Special Devices & Stock", icon: Glasses },
   { key: "beds", to: "/hospital/beds", label: "Beds & Capacity", icon: BedDouble },
   { key: "interior", to: "/hospital/interior", label: "Interior & Rooms (500+)", icon: HospitalIcon },
   { key: "ambulances", to: "/hospital/ambulances", label: "Ambulance Fleet", icon: Truck },
@@ -135,7 +142,7 @@ function Overview() {
             Rapid Dispatch Protocol
           </div>
           <p className="text-xs text-slate-600 leading-relaxed">
-            Silent Guardian connects directly with regional 108 trauma ambulances. Critical alerts flagged via AI Triage bypass routine queues to prepare catheterization and surgical bays before arrival.
+            Care Preempt connects directly with regional 108 trauma ambulances. Critical alerts flagged via AI Triage bypass routine queues to prepare catheterization, sensory accommodations, and surgical bays before arrival.
           </p>
           <div className="pt-2 flex gap-3">
             <Button
@@ -151,17 +158,18 @@ function Overview() {
   );
 }
 
-// 2. PATIENT INTAKE (550+ Scaled Patient Records with Search, Filter & Pagination)
+// 2. PATIENT INTAKE (550+ Clean, Compact Triage List; Accessibility & Organ Donor details inside secondary View Details modal)
 function PatientIntake() {
   const [patients, setPatients] = useState<PatientRecord[]>([]);
   const [search, setSearch] = useState("");
   const [severity, setSeverity] = useState("all");
   const [gender, setGender] = useState("all");
+  const [selectedPatient, setSelectedPatient] = useState<PatientRecord | null>(null);
   const [page, setPage] = useState(1);
   const perPage = 15;
 
   useEffect(() => {
-    setPatients(generate550Patients());
+    setPatients(enrichPatientsWithInclusiveData(generate550Patients()));
   }, []);
 
   const toggleAdmission = (id: string) => {
@@ -177,37 +185,33 @@ function PatientIntake() {
     );
   };
 
-  const filtered = patients.filter((p) => {
-    const matchesSearch =
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.issue.toLowerCase().includes(search.toLowerCase()) ||
-      p.location.toLowerCase().includes(search.toLowerCase()) ||
-      p.assigned_doctor.toLowerCase().includes(search.toLowerCase());
-    const matchesSev = severity === "all" || p.severity === severity;
-    const matchesGen = gender === "all" || p.gender === gender;
-    return matchesSearch && matchesSev && matchesGen;
+  const filtered = filterHospitalPatients(patients, {
+    search,
+    severity,
+    gender,
+    inclusiveFilter: "all",
   });
 
   const totalPages = Math.ceil(filtered.length / perPage) || 1;
   const paginated = filtered.slice((page - 1) * perPage, page * perPage);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5" data-testid="hospital-patient-intake">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="font-display text-2xl font-bold text-slate-900">
             Emergency Triage & Intake Queue
           </h2>
           <p className="text-sm text-slate-600 mt-1">
-            Real-time tracking of 550+ clinical intake records, triage complaints, and assigned physicians.
+            Fast-scan triage list of 550+ patients. Open View Details on any row for full clinical, accessibility, and organ donor directives.
           </p>
         </div>
-        <Badge variant="default" className="bg-amber-50 text-amber-900 border-amber-300 font-bold tabular-nums">
+        <Badge variant="default" className="bg-amber-50 text-amber-900 border-amber-300 font-bold tabular-nums self-start">
           {filtered.length} Patients in Queue
         </Badge>
       </div>
 
-      {/* Filter Toolbar */}
+      {/* Compact Filter Toolbar */}
       <div className="grid md:grid-cols-12 gap-3 p-4 bg-white rounded-2xl border border-slate-200 shadow-sm">
         <div className="md:col-span-6 relative">
           <Search size={18} className="absolute left-3.5 top-3 text-slate-400" />
@@ -217,13 +221,14 @@ function PatientIntake() {
               setSearch(e.target.value);
               setPage(1);
             }}
-            placeholder="Search by patient name, symptom, area, or physician..."
+            placeholder="Search patient name, complaint, blood group, or doctor..."
             className="pl-10 h-10"
           />
         </div>
 
         <div className="md:col-span-3">
           <select
+            aria-label="Filter by severity"
             value={severity}
             onChange={(e) => {
               setSeverity(e.target.value);
@@ -241,6 +246,7 @@ function PatientIntake() {
 
         <div className="md:col-span-3">
           <select
+            aria-label="Filter by gender"
             value={gender}
             onChange={(e) => {
               setGender(e.target.value);
@@ -255,35 +261,35 @@ function PatientIntake() {
         </div>
       </div>
 
-      {/* Patient Intake Table */}
+      {/* Clean, Compact Patient Intake Table */}
       <div className="rounded-2xl bg-white border border-slate-200 overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
-          <Table>
+          <Table data-testid="hospital-intake-table">
             <TableHeader>
               <TableRow>
-                <TableHead>Patient Name</TableHead>
-                <TableHead>Age / Gender</TableHead>
-                <TableHead>Triage Complaint</TableHead>
-                <TableHead>Severity</TableHead>
-                <TableHead>Blood</TableHead>
-                <TableHead>Assigned Doctor</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Action</TableHead>
+                <TableHead className="px-4">Patient</TableHead>
+                <TableHead className="px-3">Age / Gender</TableHead>
+                <TableHead className="px-3">Triage Complaint</TableHead>
+                <TableHead className="px-3">Severity</TableHead>
+                <TableHead className="px-3">Blood</TableHead>
+                <TableHead className="px-3">Assigned Doctor</TableHead>
+                <TableHead className="px-3">Status</TableHead>
+                <TableHead className="px-4 text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {paginated.map((p) => (
                 <TableRow key={p.id}>
-                  <TableCell className="font-semibold text-slate-900 whitespace-nowrap">
+                  <TableCell className="px-4 whitespace-nowrap font-semibold text-slate-900">
                     {p.name}
                   </TableCell>
-                  <TableCell className="text-slate-600 text-xs whitespace-nowrap">
-                    {p.age} yrs · {p.gender}
+                  <TableCell className="px-3 text-xs text-slate-600 whitespace-nowrap tabular-nums">
+                    {p.age}y · {p.gender}
                   </TableCell>
-                  <TableCell className="text-xs text-slate-800 max-w-xs truncate">
+                  <TableCell className="px-3 text-xs text-slate-800 max-w-[220px] truncate">
                     {p.issue}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-3 whitespace-nowrap">
                     <span
                       className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${
                         p.severity === "critical"
@@ -298,13 +304,13 @@ function PatientIntake() {
                       {p.severity}
                     </span>
                   </TableCell>
-                  <TableCell className="font-mono text-xs font-semibold">
+                  <TableCell className="px-3 font-mono text-xs font-bold text-slate-800 whitespace-nowrap">
                     {p.blood_group}
                   </TableCell>
-                  <TableCell className="text-xs text-slate-700 whitespace-nowrap">
-                    {p.assigned_doctor}
+                  <TableCell className="px-3 text-xs text-slate-700 whitespace-nowrap">
+                    {p.assigned_doctor.split(" (")[0]}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-3 whitespace-nowrap">
                     {p.admitted ? (
                       <Badge variant="default" className="text-[10px] bg-teal-50 text-teal-800 border-teal-200">
                         Admitted
@@ -315,15 +321,26 @@ function PatientIntake() {
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell className="text-right">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => toggleAdmission(p.id)}
-                      className="rounded-full text-xs h-7 px-3"
-                    >
-                      {p.admitted ? "Discharge" : "Admit"}
-                    </Button>
+                  <TableCell className="px-4 text-right whitespace-nowrap">
+                    <div className="inline-flex items-center gap-1.5">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        data-testid={`inspect-patient-${p.id}`}
+                        onClick={() => setSelectedPatient(p)}
+                        className="rounded-full text-xs h-7 px-3 border-slate-300 text-slate-700 hover:border-teal-600 hover:text-teal-800"
+                      >
+                        View Details
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => toggleAdmission(p.id)}
+                        className="rounded-full text-xs h-7 px-3"
+                      >
+                        {p.admitted ? "Discharge" : "Admit"}
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
@@ -334,7 +351,7 @@ function PatientIntake() {
         {/* Pagination Bar */}
         <div className="px-5 py-4 border-t border-slate-200 flex items-center justify-between text-xs text-slate-600">
           <div>
-            Showing {(page - 1) * perPage + 1} - {Math.min(page * perPage, filtered.length)} of {filtered.length} patients
+            Showing {filtered.length === 0 ? 0 : (page - 1) * perPage + 1} - {Math.min(page * perPage, filtered.length)} of {filtered.length} patients
           </div>
           <div className="flex gap-2">
             <Button
@@ -359,6 +376,12 @@ function PatientIntake() {
           </div>
         </div>
       </div>
+
+      {/* Secondary Full Patient Details Modal (Accessibility & Organ Donor Directives tucked inside) */}
+      <PatientClinicalDirectivesModal
+        patient={selectedPatient}
+        onClose={() => setSelectedPatient(null)}
+      />
     </div>
   );
 }
@@ -1197,6 +1220,7 @@ export default function HospitalDashboard() {
       <Routes>
         <Route path="/" element={<Overview />} />
         <Route path="/intake" element={<PatientIntake />} />
+        <Route path="/special-devices" element={<HospitalSpecialDevicesTab />} />
         <Route path="/beds" element={<BedsAndCapacity />} />
         <Route path="/interior" element={<HospitalInteriorEquipment />} />
         <Route path="/ambulances" element={<Ambulances />} />

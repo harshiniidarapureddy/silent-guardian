@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "../components/ui/button";
@@ -6,9 +6,17 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import {
   Shield, Hospital, UserCog, ArrowLeft, Check, AlertCircle, Eye, EyeOff,
-  Lock, Mail, Phone, CheckCircle2, ArrowRight
+  Lock, Mail, Phone, CheckCircle2, ArrowRight, Play
 } from "lucide-react";
 import { api, saveAuth } from "../lib/api";
+import {
+  clearAuthSignupDraft,
+  clearOnboardingDraft,
+  loadAuthSignupDraft,
+  saveAuthSignupDraft,
+} from "../lib/signupDraft";
+import { OnboardingVideoExplainer } from "../components/patient/OnboardingVideoExplainer";
+import { useFirebase } from "../context/FirebaseContext";
 
 const ROLE_META = {
   patient: {
@@ -37,16 +45,89 @@ const ROLE_META = {
 export default function Auth() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">(params.get("mode") === "signup" ? "signup" : "signin");
-  const [role, setRole] = useState<'patient' | 'hospital' | 'admin'>((params.get("role") as any) || "patient");
+  const { signInWithGoogle } = useFirebase();
+  const initialDraft = useRef(loadAuthSignupDraft()).current;
+
+  const [mode, setMode] = useState<"signin" | "signup">(() => {
+    const paramMode = params.get("mode");
+    if (paramMode === "signup" || paramMode === "signin") return paramMode;
+    return initialDraft?.mode || "signin";
+  });
+  const [role, setRole] = useState<'patient' | 'hospital' | 'admin'>(() => {
+    const paramRole = params.get("role") as 'patient' | 'hospital' | 'admin' | null;
+    if (paramRole === "patient" || paramRole === "hospital" || paramRole === "admin") {
+      return paramRole;
+    }
+    return initialDraft?.role || "patient";
+  });
   
-  // Credentials
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  // Credentials (non-secret signup fields hydrated from sessionStorage so video walkthrough never clears them)
+  const [email, setEmail] = useState(() => initialDraft?.email ?? "");
+  const [phone, setPhone] = useState(() => initialDraft?.phone ?? "");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [showSignupVideo, setShowSignupVideo] = useState(false);
+
+  const savedScrollYRef = useRef<number>(initialDraft?.scrollY ?? 0);
+  const pushedVideoHistoryRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    if (mode === "signup") {
+      saveAuthSignupDraft({
+        mode,
+        role,
+        email,
+        phone,
+        scrollY: savedScrollYRef.current,
+      });
+    }
+  }, [mode, role, email, phone]);
+
+  const openSignupVideo = useCallback(() => {
+    savedScrollYRef.current = window.scrollY;
+    saveAuthSignupDraft({
+      mode,
+      role,
+      email,
+      phone,
+      scrollY: window.scrollY,
+    });
+    if (!pushedVideoHistoryRef.current) {
+      window.history.pushState({ cpAuthVideoModal: true }, "");
+      pushedVideoHistoryRef.current = true;
+    }
+    setShowSignupVideo(true);
+  }, [mode, role, email, phone]);
+
+  const closeSignupVideo = useCallback((fromPopState = false) => {
+    setShowSignupVideo(false);
+    if (pushedVideoHistoryRef.current) {
+      pushedVideoHistoryRef.current = false;
+      if (!fromPopState && window.history.state?.cpAuthVideoModal) {
+        window.history.back();
+      }
+    }
+    const targetY = savedScrollYRef.current;
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: targetY, behavior: "instant" as ScrollBehavior });
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!showSignupVideo) return;
+    const onPopState = () => closeSignupVideo(true);
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeSignupVideo(false);
+    };
+    window.addEventListener("popstate", onPopState);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [showSignupVideo, closeSignupVideo]);
 
   // Real-time password strength calculation
   const passwordCriteria = useMemo(() => {
@@ -117,6 +198,10 @@ export default function Auth() {
 
       const { data } = await api.post(endpoint, payload);
       saveAuth(data.token, data.user);
+      clearAuthSignupDraft();
+      if (mode === "signup") {
+        clearOnboardingDraft();
+      }
       
       if (mode === "signup") {
         if (data.user.role === "patient") {
@@ -145,6 +230,31 @@ export default function Auth() {
       }
     } catch (err: any) {
       toast.error(err?.message || err?.response?.data?.detail || "Authentication failed. Please verify credentials.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setBusy(true);
+    try {
+      const user = await signInWithGoogle(role);
+      clearAuthSignupDraft();
+      toast.success(`Signed in with Google as ${user.preferred_name || user.email}.`);
+      if (user.role === "hospital") {
+        navigate("/hospital");
+      } else if (user.role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/patient");
+      }
+    } catch (err: any) {
+      const code = err?.code || "";
+      if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
+        toast.info("Google sign-in was cancelled.");
+      } else {
+        toast.error(err?.message || "Google sign-in could not be completed. Please try email & password.");
+      }
     } finally {
       setBusy(false);
     }
@@ -411,13 +521,38 @@ export default function Auth() {
               </div>
             )}
 
-            {/* Note on signup flow */}
+            {/* Note on signup flow + In-place Walkthrough Video Preview */}
             {mode === "signup" && role === "patient" && (
-              <div className="p-3 bg-teal-50 border border-teal-200 rounded-xl text-[11px] text-teal-800 flex items-start gap-2">
-                <Shield size={16} className="text-teal-700 shrink-0 mt-0.5" />
-                <span>
-                  After signing up, you will be guided step-by-step to enter your name, age, gender, language, location, blood group, first aid knowledge, guardian contact, and avatar.
-                </span>
+              <div className="space-y-2.5">
+                <div className="p-3 bg-teal-50 border border-teal-200 rounded-xl text-[11px] text-teal-800 flex items-start gap-2">
+                  <Shield size={16} className="text-teal-700 shrink-0 mt-0.5" />
+                  <span>
+                    After signing up, you will be guided step-by-step to enter your name, age, gender, language, location, blood group, first aid knowledge, guardian contact, and avatar.
+                  </span>
+                </div>
+                <div className="p-3 bg-slate-900 text-white rounded-xl border border-slate-800 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-teal-500/20 text-teal-300 flex items-center justify-center shrink-0">
+                      <Play size={14} className="fill-teal-300" aria-hidden="true" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-bold truncate">
+                        Preview: How Care Preempt AI Triage Works
+                      </div>
+                      <div className="text-[11px] text-slate-300 truncate">
+                        Opens in-place — your entered registration details stay saved.
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    data-testid="auth-watch-video-btn"
+                    onClick={openSignupVideo}
+                    className="px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold shrink-0 cursor-pointer transition-colors"
+                  >
+                    Watch (60s)
+                  </button>
+                </div>
               </div>
             )}
 
@@ -454,6 +589,32 @@ export default function Auth() {
               )}
             </Button>
           </form>
+
+          {/* Firebase Google Sign-In for Real-Time Cloud Sync */}
+          <div className="mt-4">
+            <div className="relative flex items-center justify-center my-3">
+              <div className="border-t border-slate-200 w-full" />
+              <span className="bg-slate-50 px-3 text-[11px] font-medium text-slate-500 whitespace-nowrap">
+                or continue with Google
+              </span>
+              <div className="border-t border-slate-200 w-full" />
+            </div>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void handleGoogleSignIn()}
+              data-testid="google-signin-btn"
+              className="w-full h-10 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-semibold text-xs shadow-2xs transition-colors cursor-pointer flex items-center justify-center gap-2.5 disabled:opacity-60"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.2-2.27H12v4.3h6.44a5.5 5.5 0 0 1-2.39 3.61v3h3.87c2.26-2.08 3.57-5.15 3.57-8.64Z" />
+                <path fill="#34A853" d="M12 24c3.24 0 5.95-1.07 7.93-2.91l-3.87-3c-1.07.72-2.44 1.14-4.06 1.14-3.12 0-5.77-2.11-6.71-4.95H1.29v3.1A12 12 0 0 0 12 24Z" />
+                <path fill="#FBBC05" d="M5.29 14.28A7.22 7.22 0 0 1 4.91 12c0-.79.14-1.56.38-2.28v-3.1H1.29A12 12 0 0 0 0 12c0 1.94.46 3.77 1.29 5.38l4-3.1Z" />
+                <path fill="#EA4335" d="M12 4.77c1.76 0 3.34.61 4.59 1.8l3.44-3.44C17.95 1.19 15.24 0 12 0A12 12 0 0 0 1.29 6.62l4 3.1C6.23 6.88 8.88 4.77 12 4.77Z" />
+              </svg>
+              <span>Continue with Google (Real-Time Cloud Sync)</span>
+            </button>
+          </div>
 
           {/* Footer Toggle */}
           <div className="mt-8 pt-4 border-t border-slate-200 text-center">
@@ -493,6 +654,28 @@ export default function Auth() {
           </div>
         </div>
       </div>
+
+      {/* In-Place Signup Walkthrough Video Lightbox */}
+      {showSignupVideo && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Care Preempt Account Walkthrough Video"
+          data-testid="auth-video-lightbox"
+          onClick={() => closeSignupVideo(false)}
+          className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"
+        >
+          <div
+            className="w-full max-w-4xl py-6 my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <OnboardingVideoExplainer
+              backLabel="Back to Account Registration"
+              onClose={() => closeSignupVideo(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

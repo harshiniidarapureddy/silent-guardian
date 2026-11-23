@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   Play, Pause, RotateCcw, Volume2, VolumeX, Globe, Sparkles, Shield,
-  Heart, AlertTriangle, CheckCircle2, ArrowRight, Activity, Smartphone,
+  Heart, AlertTriangle, CheckCircle2, ArrowRight, ArrowLeft, Activity, Smartphone,
   Radio, BedDouble, Siren, Eye, Info, X, ChevronRight, Zap, Stethoscope
 } from "lucide-react";
 import { Button } from "../ui/button";
@@ -154,9 +154,11 @@ export const TRIAGE_EXPLAINER_STAGES = [
 export function OnboardingVideoExplainer({
   embedded = false,
   onClose,
+  backLabel = "Back to Registration",
 }: {
   embedded?: boolean;
   onClose?: () => void;
+  backLabel?: string;
 }) {
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -217,6 +219,30 @@ export function OnboardingVideoExplainer({
     } catch (e) {
       // Audio speech synthesis fallback
     }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        try {
+          window.speechSynthesis.cancel();
+        } catch {
+          // ignore
+        }
+      }
+    };
+  }, []);
+
+  const handleClose = () => {
+    setIsPlaying(false);
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch {
+        // ignore
+      }
+    }
+    onClose?.();
   };
 
   const jumpToStage = (stageNum: number) => {
@@ -298,13 +324,26 @@ export function OnboardingVideoExplainer({
           </button>
 
           {onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white cursor-pointer ml-1"
-            >
-              <X size={16} />
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={handleClose}
+                data-testid="video-back-to-registration-btn"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold cursor-pointer transition-colors"
+              >
+                <ArrowLeft size={13} aria-hidden="true" />
+                <span>{backLabel}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleClose}
+                aria-label="Close video player"
+                data-testid="video-close-x-btn"
+                className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white cursor-pointer"
+              >
+                <X size={16} aria-hidden="true" />
+              </button>
+            </>
           )}
         </div>
       </div>

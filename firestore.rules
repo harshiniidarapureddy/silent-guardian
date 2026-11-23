@@ -1,0 +1,537 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 0: Global Safety Net (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // =========================================================================
+    // PHASE 3: HARDENED GLOBAL PRIMITIVES
+    // =========================================================================
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isVerifiedOwner(userId) {
+      return isVerifiedUser() && request.auth.uid == userId;
+    }
+
+    function isBootstrappedAdmin() {
+      return isVerifiedUser() && request.auth.token.email == 'prathibhadarapureddy607@gmail.com';
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || (
+        isVerifiedUser() &&
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function parentUserExists(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId));
+    }
+
+    function isValidLanguageLabel(val) {
+      return val is string && val.size() >= 1 && val.size() <= 32 &&
+        val in ['English', 'Hindi', 'Telugu', 'Tamil', 'Kannada', 'Spanish'];
+    }
+
+    function isValidBloodGroup(val) {
+      return val is string && val.size() >= 2 && val.size() <= 3 &&
+        val in ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+    }
+
+    function isValidFontScale(val) {
+      return val is string && val.size() >= 1 && val.size() <= 16 &&
+        val in ['standard', 'large', 'xlarge'];
+    }
+
+    function isValidDeviceType(val) {
+      return val is string && val.size() >= 1 && val.size() <= 32 &&
+        val in ['smart_glasses', 'hearing_aid', 'mobility_sensory', 'vitals_monitoring'];
+    }
+
+    function isValidTriageSeverity(val) {
+      return val is string && val.size() >= 1 && val.size() <= 16 &&
+        val in ['low', 'medium', 'high', 'critical'];
+    }
+
+    function isValidTriageLang(val) {
+      return val is string && val.size() >= 2 && val.size() <= 8 &&
+        val in ['en', 'hi', 'te', 'ta', 'kn', 'bn', 'es'];
+    }
+
+    function isValidConnectionType(val) {
+      return val is string && val.size() >= 1 && val.size() <= 32 &&
+        val in ['Bluetooth LE', 'Companion App', 'USB-C / Bridge'];
+    }
+
+    function isValidAwarenessCategory(val) {
+      return val is string && val.size() >= 1 && val.size() <= 80 &&
+        val in [
+          'Assistive Technology Guides',
+          'Inclusive Healthcare & Emergency Communication',
+          'Organ & Tissue Donation Awareness'
+        ];
+    }
+
+    // =========================================================================
+    // PHASE 2 & 4: VALIDATION BLUEPRINTS (ANTI-UPDATE-GAP)
+    // =========================================================================
+
+    function isValidUserPublic(data, userId) {
+      return data.keys().hasAll(['uid', 'displayName', 'role', 'language', 'onboarded', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'displayName', 'role', 'language', 'onboarded', 'createdAt', 'updatedAt']) &&
+        isValidId(data.uid) &&
+        data.uid == userId &&
+        data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
+        data.role is string && data.role.size() >= 1 && data.role.size() <= 16 &&
+        data.role in ['patient', 'hospital', 'admin'] &&
+        isValidLanguageLabel(data.language) &&
+        data.onboarded is bool &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidUserPrivate(data, userId) {
+      return data.keys().hasAll(['uid', 'email', 'updatedAt']) &&
+        data.keys().hasOnly([
+          'uid', 'email', 'phone', 'age', 'gender', 'bloodGroup',
+          'willingToDonateBlood', 'location', 'cprTraining',
+          'guardianName', 'guardianPhone', 'updatedAt'
+        ]) &&
+        isValidId(data.uid) &&
+        data.uid == userId &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 160 &&
+        (!('phone' in data) || (data.phone is string && data.phone.size() <= 32)) &&
+        (!('age' in data) || (data.age is number && data.age >= 0 && data.age <= 130)) &&
+        (!('gender' in data) || (data.gender is string && data.gender.size() <= 32)) &&
+        (!('bloodGroup' in data) || isValidBloodGroup(data.bloodGroup)) &&
+        (!('willingToDonateBlood' in data) || data.willingToDonateBlood is bool) &&
+        (!('location' in data) || (data.location is string && data.location.size() <= 120)) &&
+        (!('cprTraining' in data) || (data.cprTraining is string && data.cprTraining.size() <= 120)) &&
+        (!('guardianName' in data) || (data.guardianName is string && data.guardianName.size() <= 100)) &&
+        (!('guardianPhone' in data) || (data.guardianPhone is string && data.guardianPhone.size() <= 32)) &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidAccessibilitySettings(data, userId) {
+      return data.keys().hasAll([
+          'uid', 'voiceMode', 'visualFirst', 'highContrast', 'fontScale',
+          'reducedMotion', 'assistiveDeviceEnabled', 'onboardingCompleted', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'uid', 'voiceMode', 'visualFirst', 'highContrast', 'fontScale',
+          'reducedMotion', 'assistiveDeviceEnabled', 'onboardingCompleted', 'updatedAt'
+        ]) &&
+        isValidId(data.uid) &&
+        data.uid == userId &&
+        data.voiceMode is bool &&
+        data.visualFirst is bool &&
+        data.highContrast is bool &&
+        isValidFontScale(data.fontScale) &&
+        data.reducedMotion is bool &&
+        data.assistiveDeviceEnabled is bool &&
+        data.onboardingCompleted is bool &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidAssistiveDevice(data, userId, deviceId) {
+      return data.keys().hasAll([
+          'uid', 'deviceId', 'name', 'model', 'type',
+          'connectionType', 'connected', 'batteryLevel', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'uid', 'deviceId', 'name', 'model', 'type',
+          'connectionType', 'connected', 'batteryLevel', 'notes', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.uid) &&
+        data.uid == userId &&
+        isValidId(data.deviceId) &&
+        data.deviceId == deviceId &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 100 &&
+        data.model is string && data.model.size() >= 2 && data.model.size() <= 120 &&
+        isValidDeviceType(data.type) &&
+        isValidConnectionType(data.connectionType) &&
+        data.connected is bool &&
+        data.batteryLevel is number && data.batteryLevel >= 0 && data.batteryLevel <= 100 &&
+        (!('notes' in data) || (data.notes is string && data.notes.size() <= 300)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidOrganPledge(data, userId) {
+      return data.keys().hasAll(['uid', 'optedIn', 'organs', 'consentGiven', 'updatedAt']) &&
+        data.keys().hasOnly([
+          'uid', 'optedIn', 'donorCardId', 'organs',
+          'nextOfKinName', 'nextOfKinPhone', 'consentGiven', 'updatedAt'
+        ]) &&
+        isValidId(data.uid) &&
+        data.uid == userId &&
+        data.optedIn is bool &&
+        (!('donorCardId' in data) || (data.donorCardId is string && data.donorCardId.size() <= 64)) &&
+        data.organs is list && data.organs.size() <= 10 &&
+        data.organs.hasOnly(['Heart', 'Kidneys', 'Liver', 'Corneas', 'Lungs', 'Pancreas', 'Tissue']) &&
+        (!('nextOfKinName' in data) || (data.nextOfKinName is string && data.nextOfKinName.size() <= 100)) &&
+        (!('nextOfKinPhone' in data) || (data.nextOfKinPhone is string && data.nextOfKinPhone.size() <= 32)) &&
+        data.consentGiven is bool &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidTriageUpdate(data, userId, triageId) {
+      return data.keys().hasAll([
+          'uid', 'triageId', 'sessionId', 'symptomsSummary', 'triageGuidance',
+          'severity', 'language', 'guardianAlertTriggered', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'uid', 'triageId', 'sessionId', 'symptomsSummary', 'triageGuidance',
+          'severity', 'language', 'guardianAlertTriggered', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.uid) &&
+        data.uid == userId &&
+        isValidId(data.triageId) &&
+        data.triageId == triageId &&
+        isValidId(data.sessionId) &&
+        data.symptomsSummary is string && data.symptomsSummary.size() >= 1 && data.symptomsSummary.size() <= 400 &&
+        data.triageGuidance is string && data.triageGuidance.size() >= 1 && data.triageGuidance.size() <= 1200 &&
+        isValidTriageSeverity(data.severity) &&
+        isValidTriageLang(data.language) &&
+        data.guardianAlertTriggered is bool &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidHospitalSpecialDevice(data, deviceId) {
+      return data.keys().hasAll([
+          'deviceId', 'guideId', 'name', 'targetGroup', 'wardLocation',
+          'totalStock', 'assignedUnits', 'lowStockThreshold', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'deviceId', 'guideId', 'name', 'targetGroup', 'wardLocation',
+          'totalStock', 'assignedUnits', 'lowStockThreshold', 'updatedAt'
+        ]) &&
+        isValidId(data.deviceId) &&
+        data.deviceId == deviceId &&
+        isValidId(data.guideId) && data.guideId.size() <= 64 &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 120 &&
+        data.targetGroup is string && data.targetGroup.size() >= 1 && data.targetGroup.size() <= 140 &&
+        data.wardLocation is string && data.wardLocation.size() >= 1 && data.wardLocation.size() <= 140 &&
+        data.totalStock is number && data.totalStock >= 0 && data.totalStock <= 10000 &&
+        data.assignedUnits is number && data.assignedUnits >= 0 && data.assignedUnits <= data.totalStock &&
+        data.lowStockThreshold is number && data.lowStockThreshold >= 0 && data.lowStockThreshold <= 500 &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidAwarenessVideo(data, videoId) {
+      return data.keys().hasAll([
+          'videoId', 'title', 'category', 'description', 'durationSec',
+          'medicalSource', 'published', 'languages', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'videoId', 'title', 'category', 'description', 'durationSec',
+          'medicalSource', 'published', 'languages', 'updatedAt'
+        ]) &&
+        isValidId(data.videoId) &&
+        data.videoId == videoId &&
+        data.title is string && data.title.size() >= 3 && data.title.size() <= 180 &&
+        isValidAwarenessCategory(data.category) &&
+        data.description is string && data.description.size() >= 5 && data.description.size() <= 600 &&
+        data.durationSec is number && data.durationSec >= 60 && data.durationSec <= 1800 &&
+        data.medicalSource is string && data.medicalSource.size() >= 2 && data.medicalSource.size() <= 140 &&
+        data.published is bool &&
+        data.languages is list && data.languages.size() >= 1 && data.languages.size() <= 6 &&
+        data.languages.hasOnly(['en', 'hi', 'te', 'ta', 'kn', 'es']) &&
+        data.updatedAt is timestamp;
+    }
+
+    // =========================================================================
+    // COLLECTION MATCH BLOCKS (EXHAUSTIVE COVERAGE OF firebase-blueprint.json)
+    // =========================================================================
+
+    // 1. Admins registry (read own record only; never writable via client SDK)
+    match /admins/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && (isOwner(userId) || isBootstrappedAdmin());
+      allow list: if false;
+      allow create, update, delete: if false;
+    }
+
+    // 2. Users public display profile + Split-Collection private/clinical subcollections
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+
+      allow create: if isVerifiedOwner(userId) &&
+        isValidId(userId) &&
+        isValidUserPublic(incoming(), userId) &&
+        (incoming().role == 'patient' || (isAdmin() && incoming().role in ['patient', 'hospital', 'admin'])) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser() &&
+        isValidId(userId) &&
+        isValidUserPublic(incoming(), userId) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          isAdmin() ||
+          (
+            isVerifiedOwner(userId) &&
+            incoming().role == existing().role &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'language', 'onboarded', 'updatedAt'])
+          )
+        );
+
+      allow delete: if isAdmin() && isValidId(userId);
+
+      // 2a. Strictly Isolated Private PII & Emergency Clinical Profile
+      match /private/{docId} {
+        allow get: if isSignedIn() && isValidId(userId) && isValidId(docId) && (isOwner(userId) || isAdmin());
+        allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+
+        allow create: if isVerifiedOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(docId) &&
+          docId == 'profile' &&
+          isValidUserPrivate(incoming(), userId) &&
+          incoming().updatedAt == request.time &&
+          parentUserExists(userId);
+
+        allow update: if isVerifiedUser() &&
+          isValidId(userId) &&
+          isValidId(docId) &&
+          docId == 'profile' &&
+          isValidUserPrivate(incoming(), userId) &&
+          incoming().uid == existing().uid &&
+          incoming().updatedAt == request.time &&
+          parentUserExists(userId) &&
+          (
+            isAdmin() ||
+            (
+              isVerifiedOwner(userId) &&
+              incoming().diff(existing()).affectedKeys().hasOnly([
+                'email', 'phone', 'age', 'gender', 'bloodGroup',
+                'willingToDonateBlood', 'location', 'cprTraining',
+                'guardianName', 'guardianPhone', 'updatedAt'
+              ])
+            )
+          );
+
+        allow delete: if isAdmin() && isValidId(userId) && isValidId(docId);
+      }
+
+      // 2b. Per-User Accessibility Settings
+      match /accessibility/{docId} {
+        allow get: if isSignedIn() && isValidId(userId) && isValidId(docId) && (isOwner(userId) || isAdmin());
+        allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+
+        allow create: if isVerifiedOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(docId) &&
+          docId == 'settings' &&
+          isValidAccessibilitySettings(incoming(), userId) &&
+          incoming().updatedAt == request.time &&
+          parentUserExists(userId);
+
+        allow update: if isVerifiedUser() &&
+          isValidId(userId) &&
+          isValidId(docId) &&
+          docId == 'settings' &&
+          isValidAccessibilitySettings(incoming(), userId) &&
+          incoming().uid == existing().uid &&
+          incoming().updatedAt == request.time &&
+          parentUserExists(userId) &&
+          (
+            isAdmin() ||
+            (
+              isVerifiedOwner(userId) &&
+              incoming().diff(existing()).affectedKeys().hasOnly([
+                'voiceMode', 'visualFirst', 'highContrast', 'fontScale',
+                'reducedMotion', 'assistiveDeviceEnabled', 'onboardingCompleted', 'updatedAt'
+              ])
+            )
+          );
+
+        allow delete: if isAdmin() && isValidId(userId) && isValidId(docId);
+      }
+
+      // 2c. Per-User Paired Assistive Devices
+      match /assistiveDevices/{deviceId} {
+        allow get: if isSignedIn() && isValidId(userId) && isValidId(deviceId) && (isOwner(userId) || isAdmin());
+        allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+
+        allow create: if isVerifiedOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(deviceId) &&
+          isValidAssistiveDevice(incoming(), userId, deviceId) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          parentUserExists(userId);
+
+        allow update: if isVerifiedUser() &&
+          isValidId(userId) &&
+          isValidId(deviceId) &&
+          isValidAssistiveDevice(incoming(), userId, deviceId) &&
+          incoming().uid == existing().uid &&
+          incoming().deviceId == existing().deviceId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          parentUserExists(userId) &&
+          (
+            isAdmin() ||
+            (
+              isVerifiedOwner(userId) &&
+              incoming().diff(existing()).affectedKeys().hasOnly([
+                'name', 'model', 'type', 'connectionType', 'connected',
+                'batteryLevel', 'notes', 'updatedAt'
+              ])
+            )
+          );
+
+        allow delete: if isValidId(userId) && isValidId(deviceId) &&
+          (isVerifiedOwner(userId) || isAdmin()) &&
+          parentUserExists(userId);
+      }
+
+      // 2d. Per-User Organ Donor Pledge (contains next-of-kin PII)
+      match /organPledge/{docId} {
+        allow get: if isSignedIn() && isValidId(userId) && isValidId(docId) && (isOwner(userId) || isAdmin());
+        allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+
+        allow create: if isVerifiedOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(docId) &&
+          docId == 'current' &&
+          isValidOrganPledge(incoming(), userId) &&
+          incoming().updatedAt == request.time &&
+          parentUserExists(userId);
+
+        allow update: if isVerifiedUser() &&
+          isValidId(userId) &&
+          isValidId(docId) &&
+          docId == 'current' &&
+          isValidOrganPledge(incoming(), userId) &&
+          incoming().uid == existing().uid &&
+          incoming().updatedAt == request.time &&
+          parentUserExists(userId) &&
+          (
+            isAdmin() ||
+            (
+              isVerifiedOwner(userId) &&
+              incoming().diff(existing()).affectedKeys().hasOnly([
+                'optedIn', 'donorCardId', 'organs',
+                'nextOfKinName', 'nextOfKinPhone', 'consentGiven', 'updatedAt'
+              ])
+            )
+          );
+
+        allow delete: if isAdmin() && isValidId(userId) && isValidId(docId);
+      }
+
+      // 2e. Per-User Real-Time Patient Triage Updates
+      match /triageUpdates/{triageId} {
+        allow get: if isSignedIn() && isValidId(userId) && isValidId(triageId) && (isOwner(userId) || isAdmin());
+        allow list: if isSignedIn() && resource.data.uid == request.auth.uid;
+
+        allow create: if isVerifiedOwner(userId) &&
+          isValidId(userId) &&
+          isValidId(triageId) &&
+          isValidTriageUpdate(incoming(), userId, triageId) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          parentUserExists(userId);
+
+        allow update: if isVerifiedUser() &&
+          isValidId(userId) &&
+          isValidId(triageId) &&
+          isValidTriageUpdate(incoming(), userId, triageId) &&
+          incoming().uid == existing().uid &&
+          incoming().triageId == existing().triageId &&
+          incoming().createdAt == existing().createdAt &&
+          incoming().updatedAt == request.time &&
+          parentUserExists(userId) &&
+          (
+            isAdmin() ||
+            (
+              isVerifiedOwner(userId) &&
+              incoming().diff(existing()).affectedKeys().hasOnly([
+                'symptomsSummary', 'triageGuidance', 'severity',
+                'language', 'guardianAlertTriggered', 'updatedAt'
+              ])
+            )
+          );
+
+        allow delete: if isValidId(userId) && isValidId(triageId) &&
+          (isVerifiedOwner(userId) || isAdmin()) &&
+          parentUserExists(userId);
+      }
+    }
+
+    // 3. Hospital Special Devices Fleet Stock
+    match /hospitalSpecialDevices/{deviceId} {
+      allow get: if isSignedIn() && isValidId(deviceId);
+      allow list: if isSignedIn() && resource.data.totalStock >= 0;
+
+      allow create: if isAdmin() &&
+        isValidId(deviceId) &&
+        isValidHospitalSpecialDevice(incoming(), deviceId) &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isAdmin() &&
+        isValidId(deviceId) &&
+        isValidHospitalSpecialDevice(incoming(), deviceId) &&
+        incoming().deviceId == existing().deviceId &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'guideId', 'name', 'targetGroup', 'wardLocation',
+          'totalStock', 'assignedUnits', 'lowStockThreshold', 'updatedAt'
+        ]);
+
+      allow delete: if isAdmin() && isValidId(deviceId);
+    }
+
+    // 4. Multilingual Awareness Videos Catalog
+    match /awarenessVideos/{videoId} {
+      allow get: if isSignedIn() && isValidId(videoId) && (resource.data.published == true || isAdmin());
+      allow list: if isSignedIn() && (resource.data.published == true || isBootstrappedAdmin());
+
+      allow create: if isAdmin() &&
+        isValidId(videoId) &&
+        isValidAwarenessVideo(incoming(), videoId) &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isAdmin() &&
+        isValidId(videoId) &&
+        isValidAwarenessVideo(incoming(), videoId) &&
+        incoming().videoId == existing().videoId &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly([
+          'title', 'category', 'description', 'durationSec',
+          'medicalSource', 'published', 'languages', 'updatedAt'
+        ]);
+
+      allow delete: if isAdmin() && isValidId(videoId);
+    }
+  }
+}

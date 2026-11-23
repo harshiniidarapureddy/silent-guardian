@@ -1,0 +1,518 @@
+{
+  "entities": {
+    "UserPublicProfile": {
+      "title": "UserPublicProfile",
+      "description": "Non-PII display profile and role metadata for a Care Preempt user.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Firebase Authentication UID matching the document ID."
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Preferred name displayed inside the application."
+        },
+        "role": {
+          "type": "string",
+          "enum": ["patient", "hospital", "admin"],
+          "description": "Application access role. Self-registration is strictly limited to patient."
+        },
+        "language": {
+          "type": "string",
+          "enum": ["English", "Hindi", "Telugu", "Tamil", "Kannada", "Spanish"],
+          "description": "Preferred UI and awareness video language."
+        },
+        "onboarded": {
+          "type": "boolean",
+          "description": "Whether initial clinical profile onboarding has been completed."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of account creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last profile update."
+        }
+      },
+      "required": ["uid", "displayName", "role", "language", "onboarded", "createdAt", "updatedAt"]
+    },
+    "UserPrivateClinicalProfile": {
+      "title": "UserPrivateClinicalProfile",
+      "description": "Strictly isolated PII and emergency clinical profile for a patient.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Owner Firebase UID."
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 160,
+          "description": "User email address (PII)."
+        },
+        "phone": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "Emergency SMS mobile phone number (PII)."
+        },
+        "age": {
+          "type": "number",
+          "description": "Patient age in years."
+        },
+        "gender": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "Patient gender."
+        },
+        "bloodGroup": {
+          "type": "string",
+          "enum": ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"],
+          "description": "Patient blood group."
+        },
+        "willingToDonateBlood": {
+          "type": "boolean",
+          "description": "Whether enrolled in community rare-blood emergency net."
+        },
+        "location": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Current city or locality."
+        },
+        "cprTraining": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "First aid / CPR familiarity status."
+        },
+        "guardianName": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Emergency family guardian name (PII)."
+        },
+        "guardianPhone": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "Emergency family guardian phone number (PII)."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update."
+        }
+      },
+      "required": ["uid", "email", "updatedAt"]
+    },
+    "AccessibilitySettingsDoc": {
+      "title": "AccessibilitySettingsDoc",
+      "description": "Per-user adaptive accessibility mode preferences.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "voiceMode": {
+          "type": "boolean"
+        },
+        "visualFirst": {
+          "type": "boolean"
+        },
+        "highContrast": {
+          "type": "boolean"
+        },
+        "fontScale": {
+          "type": "string",
+          "enum": ["standard", "large", "xlarge"]
+        },
+        "reducedMotion": {
+          "type": "boolean"
+        },
+        "assistiveDeviceEnabled": {
+          "type": "boolean"
+        },
+        "onboardingCompleted": {
+          "type": "boolean"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "voiceMode",
+        "visualFirst",
+        "highContrast",
+        "fontScale",
+        "reducedMotion",
+        "assistiveDeviceEnabled",
+        "onboardingCompleted",
+        "updatedAt"
+      ]
+    },
+    "AssistiveDeviceDoc": {
+      "title": "AssistiveDeviceDoc",
+      "description": "Personal paired assistive hardware device linked to a patient.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "deviceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 100
+        },
+        "model": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "type": {
+          "type": "string",
+          "enum": ["smart_glasses", "hearing_aid", "mobility_sensory", "vitals_monitoring"]
+        },
+        "connectionType": {
+          "type": "string",
+          "enum": ["Bluetooth LE", "Companion App", "USB-C / Bridge"]
+        },
+        "connected": {
+          "type": "boolean"
+        },
+        "batteryLevel": {
+          "type": "number"
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "deviceId",
+        "name",
+        "model",
+        "type",
+        "connectionType",
+        "connected",
+        "batteryLevel",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "OrganDonorPledgeDoc": {
+      "title": "OrganDonorPledgeDoc",
+      "description": "Voluntary organ and tissue donor pledge with next-of-kin contact (PII).",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "optedIn": {
+          "type": "boolean"
+        },
+        "donorCardId": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "organs": {
+          "type": "array",
+          "description": "Up to 10 pledged organ/tissue identifiers."
+        },
+        "nextOfKinName": {
+          "type": "string",
+          "maxLength": 100
+        },
+        "nextOfKinPhone": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "consentGiven": {
+          "type": "boolean"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "optedIn", "organs", "consentGiven", "updatedAt"]
+    },
+    "HospitalSpecialDeviceDoc": {
+      "title": "HospitalSpecialDeviceDoc",
+      "description": "Hospital-owned assistive device inventory stock for disabled patients.",
+      "type": "object",
+      "properties": {
+        "deviceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "guideId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 120
+        },
+        "targetGroup": {
+          "type": "string",
+          "maxLength": 140
+        },
+        "wardLocation": {
+          "type": "string",
+          "maxLength": 140
+        },
+        "totalStock": {
+          "type": "number"
+        },
+        "assignedUnits": {
+          "type": "number"
+        },
+        "lowStockThreshold": {
+          "type": "number"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "deviceId",
+        "guideId",
+        "name",
+        "targetGroup",
+        "wardLocation",
+        "totalStock",
+        "assignedUnits",
+        "lowStockThreshold",
+        "updatedAt"
+      ]
+    },
+    "AwarenessVideoDoc": {
+      "title": "AwarenessVideoDoc",
+      "description": "Multilingual awareness video metadata curated by platform admins.",
+      "type": "object",
+      "properties": {
+        "videoId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 180
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "Assistive Technology Guides",
+            "Inclusive Healthcare & Emergency Communication",
+            "Organ & Tissue Donation Awareness"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "minLength": 5,
+          "maxLength": 600
+        },
+        "durationSec": {
+          "type": "number"
+        },
+        "medicalSource": {
+          "type": "string",
+          "maxLength": 140
+        },
+        "published": {
+          "type": "boolean"
+        },
+        "languages": {
+          "type": "array",
+          "description": "Supported subtitle/audio language codes (max 6)."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "videoId",
+        "title",
+        "category",
+        "description",
+        "durationSec",
+        "medicalSource",
+        "published",
+        "languages",
+        "updatedAt"
+      ]
+    },
+    "PatientTriageUpdateDoc": {
+      "title": "PatientTriageUpdateDoc",
+      "description": "Real-time clinical symptom triage update linked to an authenticated patient.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "triageId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "sessionId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "symptomsSummary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "triageGuidance": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1200
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["low", "medium", "high", "critical"]
+        },
+        "language": {
+          "type": "string",
+          "enum": ["en", "hi", "te", "ta", "kn", "bn", "es"]
+        },
+        "guardianAlertTriggered": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "triageId",
+        "sessionId",
+        "symptomsSummary",
+        "triageGuidance",
+        "severity",
+        "language",
+        "guardianAlertTriggered",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AdminRoleDoc": {
+      "title": "AdminRoleDoc",
+      "description": "Trusted database record granting admin privileges to a verified UID.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 160
+        },
+        "grantedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "email", "grantedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserPublicProfile" },
+      "description": "Non-PII display profile and onboarding metadata per user."
+    },
+    "/users/{userId}/private/{docId}": {
+      "schema": { "$ref": "#/entities/UserPrivateClinicalProfile" },
+      "description": "Isolated PII & emergency clinical profile (strictly owner/admin only)."
+    },
+    "/users/{userId}/accessibility/{docId}": {
+      "schema": { "$ref": "#/entities/AccessibilitySettingsDoc" },
+      "description": "User accessibility preferences (strictly owner/admin only)."
+    },
+    "/users/{userId}/assistiveDevices/{deviceId}": {
+      "schema": { "$ref": "#/entities/AssistiveDeviceDoc" },
+      "description": "User-owned assistive hardware devices (strictly owner/admin only)."
+    },
+    "/users/{userId}/organPledge/{docId}": {
+      "schema": { "$ref": "#/entities/OrganDonorPledgeDoc" },
+      "description": "Voluntary organ donor pledge & next-of-kin contact (strictly owner/admin only)."
+    },
+    "/users/{userId}/triageUpdates/{triageId}": {
+      "schema": { "$ref": "#/entities/PatientTriageUpdateDoc" },
+      "description": "Real-time AI symptom triage updates synced per authenticated patient (strictly owner/admin only)."
+    },
+    "/hospitalSpecialDevices/{deviceId}": {
+      "schema": { "$ref": "#/entities/HospitalSpecialDeviceDoc" },
+      "description": "Hospital-owned special assistive device fleet stock."
+    },
+    "/awarenessVideos/{videoId}": {
+      "schema": { "$ref": "#/entities/AwarenessVideoDoc" },
+      "description": "Multilingual clinical awareness video catalog."
+    },
+    "/admins/{userId}": {
+      "schema": { "$ref": "#/entities/AdminRoleDoc" },
+      "description": "Trusted server/admin role registry (immutable from client)."
+    }
+  }
+}

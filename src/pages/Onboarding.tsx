@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { Button } from "../components/ui/button";
@@ -10,6 +10,12 @@ import {
   Play, Video, Zap, Eye
 } from "lucide-react";
 import { api, getUser, saveAuth } from "../lib/api";
+import {
+  clearAuthSignupDraft,
+  clearOnboardingDraft,
+  loadOnboardingDraft,
+  saveOnboardingDraft,
+} from "../lib/signupDraft";
 import { OnboardingVideoExplainer } from "../components/patient/OnboardingVideoExplainer";
 
 const LANGS = [
@@ -67,32 +73,178 @@ export const ANIME_AVATARS_COLLECTION = [
 export default function Onboarding() {
   const navigate = useNavigate();
   const currentUser = getUser();
-  const [step, setStep] = useState(1);
+  const initialDraft = useRef(loadOnboardingDraft()).current;
+
+  const [step, setStep] = useState<number>(() => {
+    const s = initialDraft?.step;
+    return typeof s === "number" && s >= 1 && s <= 4 ? s : 1;
+  });
   const [saving, setSaving] = useState(false);
 
   // Step 1: What should we call you? + Age, Gender, Language, Location, Phone
-  const [name, setName] = useState(currentUser?.preferred_name || "");
-  const [phone, setPhone] = useState(currentUser?.phone || "");
-  const [age, setAge] = useState("24");
-  const [gender, setGender] = useState("Male");
-  const [language, setLanguage] = useState("en");
-  const [location, setLocation] = useState("Hyderabad");
-  const [customLocation, setCustomLocation] = useState("");
+  const [name, setName] = useState(
+    initialDraft?.name ?? currentUser?.preferred_name ?? ""
+  );
+  const [phone, setPhone] = useState(
+    initialDraft?.phone ?? currentUser?.phone ?? ""
+  );
+  const [age, setAge] = useState(initialDraft?.age ?? "24");
+  const [gender, setGender] = useState(initialDraft?.gender ?? "Male");
+  const [language, setLanguage] = useState(initialDraft?.language ?? "en");
+  const [location, setLocation] = useState(initialDraft?.location ?? "Hyderabad");
+  const [customLocation, setCustomLocation] = useState(
+    initialDraft?.customLocation ?? ""
+  );
 
   // Step 2: Blood group + Willing to donate + First aid / CPR / nursing
-  const [bloodGroup, setBloodGroup] = useState("O+");
-  const [willingToDonate, setWillingToDonate] = useState(true);
-  const [firstAidLevel, setFirstAidLevel] = useState("trained");
+  const [bloodGroup, setBloodGroup] = useState(initialDraft?.bloodGroup ?? "O+");
+  const [willingToDonate, setWillingToDonate] = useState(
+    initialDraft?.willingToDonate ?? true
+  );
+  const [firstAidLevel, setFirstAidLevel] = useState(
+    initialDraft?.firstAidLevel ?? "trained"
+  );
 
   // Step 3: Guardian details + Consent protocols
-  const [guardianName, setGuardianName] = useState("");
-  const [guardianPhone, setGuardianPhone] = useState("");
-  const [agreeConsent, setAgreeConsent] = useState(true);
+  const [guardianName, setGuardianName] = useState(
+    initialDraft?.guardianName ?? ""
+  );
+  const [guardianPhone, setGuardianPhone] = useState(
+    initialDraft?.guardianPhone ?? ""
+  );
+  const [agreeConsent, setAgreeConsent] = useState(
+    initialDraft?.agreeConsent ?? true
+  );
 
-  const [selectedAvatar, setSelectedAvatar] = useState(ANIME_AVATARS_COLLECTION[0].url);
+  const [selectedAvatar, setSelectedAvatar] = useState(
+    initialDraft?.selectedAvatar ?? ANIME_AVATARS_COLLECTION[0].url
+  );
   const [customPhoto, setCustomPhoto] = useState<string | null>(null);
   const [showVideoExplainer, setShowVideoExplainer] = useState(false);
-  const [showInlineGuardianVideo, setShowInlineGuardianVideo] = useState(false);
+
+  const savedScrollYRef = useRef<number>(initialDraft?.scrollY ?? 0);
+  const pushedVideoHistoryRef = useRef<boolean>(false);
+
+  // Persist all in-progress onboarding inputs in sessionStorage so nothing is lost during video playback
+  useEffect(() => {
+    saveOnboardingDraft({
+      step,
+      name,
+      phone,
+      age,
+      gender,
+      language,
+      location,
+      customLocation,
+      bloodGroup,
+      willingToDonate,
+      firstAidLevel,
+      guardianName,
+      guardianPhone,
+      agreeConsent,
+      selectedAvatar,
+      scrollY: savedScrollYRef.current,
+    });
+  }, [
+    step,
+    name,
+    phone,
+    age,
+    gender,
+    language,
+    location,
+    customLocation,
+    bloodGroup,
+    willingToDonate,
+    firstAidLevel,
+    guardianName,
+    guardianPhone,
+    agreeConsent,
+    selectedAvatar,
+  ]);
+
+  const restoreScrollPosition = useCallback(() => {
+    const targetY = savedScrollYRef.current;
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: targetY, behavior: "instant" as ScrollBehavior });
+    });
+  }, []);
+
+  const openVideoLightbox = useCallback(() => {
+    savedScrollYRef.current = window.scrollY;
+    saveOnboardingDraft({
+      step,
+      name,
+      phone,
+      age,
+      gender,
+      language,
+      location,
+      customLocation,
+      bloodGroup,
+      willingToDonate,
+      firstAidLevel,
+      guardianName,
+      guardianPhone,
+      agreeConsent,
+      selectedAvatar,
+      scrollY: window.scrollY,
+    });
+    if (!pushedVideoHistoryRef.current) {
+      window.history.pushState({ cpVideoModal: true }, "");
+      pushedVideoHistoryRef.current = true;
+    }
+    setShowVideoExplainer(true);
+  }, [
+    step,
+    name,
+    phone,
+    age,
+    gender,
+    language,
+    location,
+    customLocation,
+    bloodGroup,
+    willingToDonate,
+    firstAidLevel,
+    guardianName,
+    guardianPhone,
+    agreeConsent,
+    selectedAvatar,
+  ]);
+
+  const closeVideoLightbox = useCallback(
+    (fromPopState = false) => {
+      setShowVideoExplainer(false);
+      if (pushedVideoHistoryRef.current) {
+        pushedVideoHistoryRef.current = false;
+        if (!fromPopState && window.history.state?.cpVideoModal) {
+          window.history.back();
+        }
+      }
+      restoreScrollPosition();
+    },
+    [restoreScrollPosition]
+  );
+
+  // Intercept browser Back button and Escape key while video lightbox is open so user stays on exact step
+  useEffect(() => {
+    if (!showVideoExplainer) return;
+    const onPopState = () => {
+      closeVideoLightbox(true);
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        closeVideoLightbox(false);
+      }
+    };
+    window.addEventListener("popstate", onPopState);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("popstate", onPopState);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [showVideoExplainer, closeVideoLightbox]);
 
   const activePhoto = customPhoto || selectedAvatar;
   const effectiveLocation = location === "Other" && customLocation.trim() ? customLocation.trim() : location;
@@ -188,6 +340,8 @@ export default function Onboarding() {
         });
       }
 
+      clearOnboardingDraft();
+      clearAuthSignupDraft();
       toast.success(`Welcome to Care Preempt, ${name.trim()}! Your safety profile is fully active.`);
       window.dispatchEvent(new Event("profile-updated"));
       navigate("/patient");
@@ -220,7 +374,8 @@ export default function Onboarding() {
           <Button
             type="button"
             size="sm"
-            onClick={() => setShowVideoExplainer(true)}
+            data-testid="onboarding-watch-video-btn"
+            onClick={openVideoLightbox}
             className="h-9 px-4 rounded-xl bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs shrink-0 cursor-pointer shadow-md inline-flex items-center gap-1.5"
           >
             <span>Watch Video Breakdown</span>
@@ -474,22 +629,26 @@ export default function Onboarding() {
                 <p className="text-[11px] text-slate-500 mt-0.5">
                   Helps our network coordinate nearby certified bystander response during cardiac arrests.
                 </p>
-                <div className="space-y-2 mt-2">
+                <div className="space-y-2 mt-2" role="radiogroup" aria-label="First Aid and CPR Experience">
                   {FIRST_AID_OPTIONS.map((fa) => {
                     const isSelected = firstAidLevel === fa.value;
                     return (
-                      <div
+                      <button
                         key={fa.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={isSelected}
+                        data-testid={`first-aid-option-${fa.value}`}
                         onClick={() => setFirstAidLevel(fa.value)}
-                        className={`p-3 rounded-xl border text-xs font-medium flex items-center justify-between cursor-pointer transition-all ${
+                        className={`w-full text-left p-3 rounded-xl border text-xs font-medium flex items-center justify-between cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 ${
                           isSelected
                             ? "bg-teal-50 border-teal-600 text-teal-950 ring-1 ring-teal-600 font-semibold"
                             : "bg-white border-slate-200 text-slate-700 hover:border-slate-300"
                         }`}
                       >
                         <span>{fa.label}</span>
-                        {isSelected && <Check size={16} className="text-teal-700 shrink-0" />}
-                      </div>
+                        {isSelected && <Check size={16} className="text-teal-700 shrink-0" aria-hidden="true" />}
+                      </button>
                     );
                   })}
                 </div>
@@ -572,7 +731,8 @@ export default function Onboarding() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setShowVideoExplainer(true)}
+                    data-testid="onboarding-guardian-video-btn"
+                    onClick={openVideoLightbox}
                     className="px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white font-bold text-xs shrink-0 cursor-pointer flex items-center gap-1 shadow-sm"
                   >
                     <Play size={12} className="fill-white" />
@@ -744,12 +904,23 @@ export default function Onboarding() {
         </div>
       </div>
 
-      {/* Interactive Video Explainer Modal */}
+      {/* In-Place Interactive Video Explainer Lightbox (Preserves Registration Step & Form State) */}
       {showVideoExplainer && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
-          <div className="w-full max-w-4xl py-6 my-auto">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="How Care Preempt AI Triage Works Video Guide"
+          data-testid="signup-video-lightbox"
+          onClick={() => closeVideoLightbox(false)}
+          className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto"
+        >
+          <div
+            className="w-full max-w-4xl py-6 my-auto"
+            onClick={(e) => e.stopPropagation()}
+          >
             <OnboardingVideoExplainer
-              onClose={() => setShowVideoExplainer(false)}
+              backLabel={`Back to Registration (Step ${step} of 4)`}
+              onClose={() => closeVideoLightbox(false)}
             />
           </div>
         </div>

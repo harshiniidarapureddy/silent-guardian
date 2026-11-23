@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
+import nodemailer from "nodemailer";
 import { GoogleGenAI } from "@google/genai";
 
 dotenv.config();
@@ -9,10 +10,56 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+export interface ServerConfig {
+  port: number;
+  host: string;
+  hmrEnabled: boolean;
+}
+
+export function resolveServerConfig(
+  argv: string[] = process.argv,
+  env: Record<string, string | undefined> = process.env
+): ServerConfig {
+  let cliPort: string | undefined;
+  let cliHost: string | undefined;
+
+  for (let i = 2; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === "--port" && argv[i + 1]) {
+      cliPort = argv[++i];
+    } else if (arg.startsWith("--port=")) {
+      cliPort = arg.slice("--port=".length);
+    } else if (arg === "--host" && argv[i + 1]) {
+      cliHost = argv[++i];
+    } else if (arg.startsWith("--host=")) {
+      cliHost = arg.slice("--host=".length);
+    }
+  }
+
+  const isProduction = env.NODE_ENV === "production";
+  const defaultPort = env.DEFAULT_APP_PORT || "3000";
+  const envPort = env.PORT;
+  // In the dev container, nginx occupies NGINX_PORT (e.g. 8080) and proxies to DEFAULT_APP_PORT (3000).
+  const safeEnvPort =
+    envPort && (isProduction || !env.NGINX_PORT || envPort !== env.NGINX_PORT)
+      ? envPort
+      : undefined;
+
+  const parsedPort = parseInt(cliPort || safeEnvPort || defaultPort, 10);
+  const port = Number.isFinite(parsedPort) && parsedPort > 0 ? parsedPort : 3000;
+  const host = cliHost || env.HOST || "0.0.0.0";
+  const hmrEnabled = env.DISABLE_HMR !== "true";
+
+  return { port, host, hmrEnabled };
+}
+
 const app = express();
-const PORT = parseInt(process.env.PORT || "3000", 10);
 
 app.use(express.json());
+
+app.get("/api/health", (_req, res) => {
+  res.json({ status: "ok" });
+});
 
 // In-memory OTP store for email verification
 interface OtpRecord {
@@ -100,8 +147,6 @@ Provide up-to-date, grounded, and accurate clinical safety guidance, immediate a
     });
   }
 });
-
-import nodemailer from "nodemailer";
 
 // Real Email Dispatcher via nodemailer (with fallback to Ethereal live mail preview)
 async function sendRealEmailOtp(toEmail: string, otpCode: string): Promise<{ sent: boolean; previewUrl?: string; error?: string }> {
@@ -278,13 +323,19 @@ app.post("/api/auth/verify-otp", (req, res) => {
 // Mount Vite or serve static production build
 async function startServer() {
   const isProduction = process.env.NODE_ENV === "production";
+  const { port, host, hmrEnabled } = resolveServerConfig();
+  let viteServer: { close: () => Promise<void> } | null = null;
 
   if (!isProduction) {
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: hmrEnabled,
+      },
       appType: "spa",
     });
+    viteServer = vite;
     app.use(vite.middlewares);
   } else {
     const distPath = path.resolve(__dirname, "dist");
@@ -294,9 +345,29 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Silent Guardian full-stack server running on http://0.0.0.0:${PORT}`);
+  const httpServer = app.listen(port, host, () => {
+    console.log(`Care Preempt full-stack server running on http://${host}:${port}`);
   });
+
+  const shutdown = async () => {
+    httpServer.close();
+    if (viteServer) {
+      await viteServer.close();
+    }
+    process.exit(0);
+  };
+
+  process.once("SIGTERM", shutdown);
+  process.once("SIGINT", shutdown);
 }
 
-startServer();
+const isEntrypoint =
+  Boolean(process.argv[1]) &&
+  path.resolve(process.argv[1]) === path.resolve(__filename);
+
+if (isEntrypoint) {
+  startServer().catch((err) => {
+    console.error("Failed to start server:", err);
+    process.exit(1);
+  });
+}

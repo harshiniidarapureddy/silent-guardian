@@ -8,6 +8,8 @@ import PatientDashboard from "./pages/PatientDashboard";
 import HospitalDashboard from "./pages/HospitalDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import { getUser, initializeStorage } from "./lib/api";
+import { AccessibilityProvider } from "./context/AccessibilityContext";
+import { FirebaseErrorBoundary, FirebaseProvider } from "./context/FirebaseContext";
 
 const Protected: React.FC<{ role?: "patient" | "hospital" | "admin"; children: React.ReactNode }> = ({ role, children }) => {
   const u = getUser();
@@ -23,19 +25,25 @@ export default function App() {
   }, []);
 
   return (
-    <div className="App min-h-screen bg-slate-50 text-slate-900 font-sans">
-      <Toaster position="top-right" richColors />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/patient/*" element={<Protected role="patient"><PatientDashboard /></Protected>} />
-          <Route path="/hospital/*" element={<Protected role="hospital"><HospitalDashboard /></Protected>} />
-          <Route path="/admin/*" element={<Protected role="admin"><AdminDashboard /></Protected>} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </div>
+    <FirebaseErrorBoundary>
+      <FirebaseProvider>
+        <div className="App min-h-screen bg-slate-50 text-slate-900 font-sans">
+          <Toaster position="bottom-center" richColors offset={16} />
+          <BrowserRouter>
+            <AccessibilityProvider>
+              <Routes>
+                <Route path="/" element={<Landing />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/onboarding" element={<Onboarding />} />
+                <Route path="/patient/*" element={<Protected role="patient"><PatientDashboard /></Protected>} />
+                <Route path="/hospital/*" element={<Protected role="hospital"><HospitalDashboard /></Protected>} />
+                <Route path="/admin/*" element={<Protected role="admin"><AdminDashboard /></Protected>} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </AccessibilityProvider>
+          </BrowserRouter>
+        </div>
+      </FirebaseProvider>
+    </FirebaseErrorBoundary>
   );
 }

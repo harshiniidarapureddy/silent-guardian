@@ -10,20 +10,24 @@ import {
   Activity, Network, CheckCircle2, MessageSquareText, BookOpen, ShieldAlert,
   FileText, AlertTriangle, X, ShieldCheck, Lock, KeyRound, Shield, Search,
   Download, RefreshCw, Smartphone, Eye, Check, FileSpreadsheet, Filter, ChevronLeft, ChevronRight, Hash,
-  BedDouble, Truck, Siren, MapPin, Star, Radio, Server, Database, Globe2
+  BedDouble, Truck, Siren, MapPin, Star, Radio, Server, Database, Globe2, HeartHandshake
 } from "lucide-react";
 
 import DashShell, { NavItem } from "../components/DashShell";
 import { api } from "../lib/api";
 import { Hospital, FeedbackItem, ScamReport, AdminAuditLog, SecurityStatus } from "../types";
 import { TwoFactorModal } from "../components/admin/TwoFactorModal";
+import { AdminAccessibilityOverview } from "../components/admin/AdminAccessibilityOverview";
+import { AdminOrganRegistryTab } from "../components/admin/AdminOrganRegistryTab";
+import { AdminAwarenessHub } from "../components/admin/AdminAwarenessHub";
 
 const NAV: NavItem[] = [
   { key: "overview", to: "/admin", label: "Network Analytics", icon: Activity, exact: true },
+  { key: "organ-registry", to: "/admin/organ-registry", label: "Organ Donation Registry", icon: HeartHandshake },
   { key: "verify", to: "/admin/verify", label: "Verification Queue", icon: CheckCircle2 },
   { key: "audit", to: "/admin/audit", label: "Security Audit Logs", icon: ShieldCheck },
   { key: "security", to: "/admin/security", label: "Security & 2FA Console", icon: Lock },
-  { key: "awareness", to: "/admin/awareness", label: "Awareness Publisher", icon: BookOpen },
+  { key: "awareness", to: "/admin/awareness", label: "Awareness Hub", icon: BookOpen },
   { key: "scams", to: "/admin/scams", label: "Fraud Watchlist", icon: ShieldAlert },
   { key: "feedback", to: "/admin/feedback", label: "User Feedback", icon: MessageSquareText },
 ];
@@ -187,6 +191,9 @@ function Overview() {
           </div>
         </div>
       </div>
+
+      {/* Accessibility & Assistive Tech Overview Panel */}
+      <AdminAccessibilityOverview />
 
       {/* Major Metropolitan Cluster Telemetry Table */}
       <div className="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
@@ -1684,10 +1691,11 @@ export default function AdminDashboard() {
     <DashShell title="Platform Admin" nav={NAV} accent="slate">
       <Routes>
         <Route path="/" element={<Overview />} />
+        <Route path="/organ-registry" element={<AdminOrganRegistryTab />} />
         <Route path="/verify" element={<Verify />} />
         <Route path="/audit" element={<AuditLogs />} />
         <Route path="/security" element={<SecurityConsole />} />
-        <Route path="/awareness" element={<AwarenessManager />} />
+        <Route path="/awareness" element={<AdminAwarenessHub />} />
         <Route path="/scams" element={<ScamsWatchlist />} />
         <Route path="/feedback" element={<Feedback />} />
       </Routes>
